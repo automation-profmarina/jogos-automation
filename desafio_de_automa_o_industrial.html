@@ -1,0 +1,2199 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AutoTech Arena: Desafio de Automação Industrial</title>
+
+  <!-- Tailwind CSS via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Fontes Técnicas: Chakra Petch (Títulos), Inter (Corpo) e JetBrains Mono (Dados/Ladder/Cronômetro) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            display: ['"Chakra Petch"', 'sans-serif'],
+            sans: ['Inter', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          },
+          colors: {
+            steel: {
+              950: '#0b0f19',
+              900: '#111827',
+              800: '#1e293b',
+              700: '#334155',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Fundo técnico escuro com grade sutil estilo IHM / SCADA */
+    body {
+      background-color: #0b0f19;
+      background-image:
+        linear-gradient(to right, rgba(6, 182, 212, 0.05) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(6, 182, 212, 0.05) 1px, transparent 1px);
+      background-size: 32px 32px;
+      color: #f8fafc;
+      overflow-x: hidden;
+    }
+
+    /* Painel IHM com borda metálica e profundidade */
+    .ihm-panel {
+      background: linear-gradient(180deg, rgba(17, 24, 39, 0.96) 0%, rgba(11, 15, 25, 0.98) 100%);
+      border: 1px solid #334155;
+      box-shadow: 0 12px 30px -8px rgba(0, 0, 0, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    }
+
+    .ihm-card {
+      background: rgba(30, 41, 59, 0.55);
+      border: 1px solid #334155;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    }
+
+    /* LEDs industriais */
+    .led-green { box-shadow: 0 0 10px #10b981, inset 0 0 4px #a7f3d0; }
+    .led-cyan  { box-shadow: 0 0 10px #06b6d4, inset 0 0 4px #a5f3fc; }
+    .led-amber { box-shadow: 0 0 10px #f59e0b, inset 0 0 4px #fde68a; }
+    .led-red   { box-shadow: 0 0 12px #ef4444, inset 0 0 4px #fecaca; }
+
+    /* Animações SVG para esquemas técnicos */
+    @keyframes flowDash {
+      to { stroke-dashoffset: -24; }
+    }
+    .wire-live {
+      stroke-dasharray: 8 4;
+      animation: flowDash 0.65s linear infinite;
+    }
+
+    @keyframes spinAxis {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+    .spin-motor {
+      transform-origin: center;
+      animation: spinAxis 0.8s linear infinite;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col font-sans antialiased selection:bg-cyan-500 selection:text-slate-950">
+
+  <!-- ===================================================================== -->
+  <!-- CABEÇALHO IHM / SCADA + CRACHÁ DO OPERADOR + 3 ABAS PRINCIPAIS        -->
+  <!-- ===================================================================== -->
+  <header class="sticky top-0 z-50 bg-[#0b0f19]/95 backdrop-blur-md border-b border-slate-800 shadow-2xl">
+    <div class="max-w-7xl mx-auto px-3 sm:px-6 pt-3 pb-2 space-y-3">
+      
+      <!-- Linha Superior: Marca + Crachá do Aluno Logado + XP e Som -->
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        
+        <!-- Identidade AutoTech Arena -->
+        <button onclick="App.switchTab('modules')" class="flex items-center gap-3 text-left group focus:outline-none">
+          <div class="w-11 h-11 rounded-xl bg-gradient-to-br from-cyan-500 to-amber-500 p-0.5 shadow-lg shadow-cyan-500/20 group-hover:scale-105 transition-transform">
+            <div class="w-full h-full bg-[#0b0f19] rounded-[10px] flex items-center justify-center">
+              <svg class="w-6 h-6 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke="#f59e0b" d="M9 12h2l1-2 2 4 1-2h2" />
+              </svg>
+            </div>
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="font-display font-bold text-lg sm:text-xl tracking-wide text-white">
+                AUTOTECH <span class="text-cyan-400">ARENA</span>
+              </span>
+              <span class="hidden md:inline-block text-[10px] font-mono px-2 py-0.5 rounded bg-amber-500/15 text-amber-400 border border-amber-500/30">
+                SCADA • 2º EM
+              </span>
+            </div>
+            <p class="text-[11px] text-slate-400 hidden sm:block">Simulador Técnico de Automação Industrial</p>
+          </div>
+        </button>
+
+        <!-- Crachá Digital do Operador Logado + XP + Som -->
+        <div class="flex items-center gap-2 sm:gap-3">
+          <!-- Crachá Clicável (leva para Cadastro) -->
+          <button onclick="App.switchTab('register')" class="flex items-center gap-2.5 bg-slate-900 hover:bg-slate-800 border border-slate-700 hover:border-cyan-400 rounded-xl px-2.5 py-1.5 transition-all text-left" title="Editar Credencial / Trocar Operador">
+            <div id="header-avatar-box" class="w-8 h-8 rounded-lg bg-slate-800 border border-cyan-500/40 overflow-hidden shrink-0 flex items-center justify-center">
+              <!-- Avatar SVG do aluno -->
+            </div>
+            <div class="leading-tight hidden xs:block sm:block">
+              <div class="flex items-center gap-1.5">
+                <span id="header-user-name" class="text-xs font-bold text-white truncate max-w-[110px] sm:max-w-[140px]">Operador(a)</span>
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 led-green"></span>
+              </div>
+              <div id="header-user-turma" class="text-[10px] font-mono text-cyan-400 truncate max-w-[130px]">2º Ano A - Manhã</div>
+            </div>
+          </button>
+
+          <!-- Display XP -->
+          <div class="flex items-center gap-2 bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5">
+            <div class="leading-tight">
+              <div class="text-[9px] font-mono uppercase text-slate-400">XP TOTAL</div>
+              <div class="text-xs sm:text-sm font-mono font-extrabold text-amber-400"><span id="header-xp">0</span> XP</div>
+            </div>
+          </div>
+
+          <!-- Botão Áudio Web Audio API -->
+          <button id="btn-audio" onclick="App.toggleAudio()" class="p-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-cyan-400 transition-all" title="Ativar/Desativar Efeitos Sonoros">
+            <svg id="icon-audio-on" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+            </svg>
+            <svg id="icon-audio-off" class="w-5 h-5 hidden text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15zM17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" />
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Barra de Navegação Principal (3 Abas IHM) -->
+      <nav class="grid grid-cols-3 gap-2 pt-1 border-t border-slate-800/80" aria-label="Navegação IHM">
+        <button id="tab-btn-modules" onclick="App.switchTab('modules')" class="py-2.5 px-2 sm:px-4 rounded-xl font-display font-bold text-xs sm:text-sm tracking-wide flex items-center justify-center gap-2 border transition-all bg-cyan-500/15 text-cyan-300 border-cyan-500/50 shadow-inner">
+          <span>🏭</span>
+          <span class="truncate">PAINEL DE MÓDULOS</span>
+        </button>
+
+        <button id="tab-btn-register" onclick="App.switchTab('register')" class="py-2.5 px-2 sm:px-4 rounded-xl font-display font-bold text-xs sm:text-sm tracking-wide flex items-center justify-center gap-2 border transition-all bg-slate-900/80 text-slate-400 border-slate-800 hover:text-white hover:border-slate-600">
+          <span>👷</span>
+          <span class="truncate">CADASTRO DE OPERADOR</span>
+        </button>
+
+        <button id="tab-btn-ranking" onclick="App.switchTab('ranking')" class="py-2.5 px-2 sm:px-4 rounded-xl font-display font-bold text-xs sm:text-sm tracking-wide flex items-center justify-center gap-2 border transition-all bg-slate-900/80 text-slate-400 border-slate-800 hover:text-white hover:border-slate-600">
+          <span>🏆</span>
+          <span class="truncate">RANKING DA TURMA</span>
+        </button>
+      </nav>
+
+    </div>
+  </header>
+
+  <!-- ===================================================================== -->
+  <!-- CONTEÚDO PRINCIPAL                                                    -->
+  <!-- ===================================================================== -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 py-6">
+
+    <!-- =================================================================== -->
+    <!-- ABA 1: 🏭 PAINEL DE MÓDULOS                                         -->
+    <!-- =================================================================== -->
+    <section id="view-modules" class="space-y-6">
+      
+      <!-- Banner de Status Telemetria & Progresso -->
+      <div class="ihm-panel rounded-2xl p-5 sm:p-7">
+        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+          <div class="space-y-2.5 max-w-2xl">
+            <div class="flex flex-wrap items-center gap-2 text-[11px] font-mono">
+              <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+                CLP CPU: RUN
+              </span>
+              <span id="dash-rank-badge" class="px-2.5 py-1 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30 font-bold">
+                PATENTE: APRENDIZ
+              </span>
+              <span class="px-2.5 py-1 rounded-full bg-cyan-500/15 text-cyan-300 border border-cyan-500/30">
+                CONCLUSÃO: <strong id="dash-progress-text">0/18</strong>
+              </span>
+            </div>
+
+            <h1 class="font-display text-2xl sm:text-3xl font-bold text-white tracking-wide">
+              CENTRAL DE OPERAÇÕES <span class="text-cyan-400">SCADA</span>
+            </h1>
+            <p class="text-sm sm:text-base text-slate-300 leading-relaxed">
+              Bem-vindo(a), <strong id="dash-welcome-name" class="text-amber-400">Operador(a)</strong>! Selecione um dos 6 módulos técnicos abaixo para resolver cenários reais de chão de fábrica antes que o cronômetro zere. Quanto mais rápido você acertar, maior será o <span class="text-emerald-400 font-semibold">Bônus de Velocidade</span>!
+            </p>
+          </div>
+
+          <!-- Painel Resumo de Métricas do Operador -->
+          <div class="grid grid-cols-3 gap-2.5 sm:gap-3 shrink-0">
+            <div class="ihm-card rounded-xl p-3 sm:p-4 text-center">
+              <div class="text-[10px] font-mono text-slate-400">DESAFIOS</div>
+              <div id="dash-kpi-done" class="text-lg sm:text-2xl font-mono font-extrabold text-cyan-400 mt-1">0/18</div>
+            </div>
+            <div class="ihm-card rounded-xl p-3 sm:p-4 text-center">
+              <div class="text-[10px] font-mono text-slate-400">PRECISÃO</div>
+              <div id="dash-kpi-acc" class="text-lg sm:text-2xl font-mono font-extrabold text-emerald-400 mt-1">0%</div>
+            </div>
+            <div class="ihm-card rounded-xl p-3 sm:p-4 text-center">
+              <div class="text-[10px] font-mono text-slate-400">POSIÇÃO</div>
+              <div id="dash-kpi-pos" class="text-lg sm:text-2xl font-mono font-extrabold text-amber-400 mt-1">#-</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Grade dos 6 Módulos -->
+      <div>
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="font-display text-sm sm:text-base font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-sm bg-amber-400"></span>
+            Módulos de Automação Industrial (6 Áreas • 18 Missões)
+          </h2>
+          <button onclick="App.switchTab('register')" class="text-xs font-mono text-cyan-400 hover:text-cyan-300 underline">
+            Alterar Operador / Avatar →
+          </button>
+        </div>
+
+        <div id="modules-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          <!-- Cards renderizados via JS -->
+        </div>
+      </div>
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- ABA 2: 👷 CADASTRO DE OPERADOR                                      -->
+    <!-- =================================================================== -->
+    <section id="view-register" class="hidden max-w-4xl mx-auto space-y-6">
+      <div class="ihm-panel rounded-2xl p-5 sm:p-8 space-y-6">
+        
+        <!-- Cabeçalho da Aba -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-slate-800">
+          <div>
+            <span class="text-xs font-mono uppercase tracking-wider text-amber-400 font-bold">CREDENCIAMENTO DE LABORATÓRIO</span>
+            <h2 class="font-display text-2xl sm:text-3xl font-bold text-white mt-0.5">
+              👷 CADASTRO DE OPERADOR
+            </h2>
+            <p class="text-xs sm:text-sm text-slate-400 mt-1">
+              Personalize seu crachá técnico e escolha seu avatar para registrar sua pontuação no Ranking da Turma.
+            </p>
+          </div>
+
+          <button onclick="App.prepareNewOperator()" class="px-4 py-2.5 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/40 font-mono font-bold text-xs flex items-center justify-center gap-2 transition-all shrink-0">
+            <span>+ Novo Operador / Trocar Aluno</span>
+          </button>
+        </div>
+
+        <!-- Alerta de Feedback ao Salvar -->
+        <div id="register-feedback" class="hidden rounded-xl p-3.5 bg-emerald-500/15 border border-emerald-500/40 text-emerald-300 text-xs sm:text-sm font-mono flex items-center justify-between">
+          <span id="register-feedback-text">✓ Credencial atualizada e sincronizada com o Ranking!</span>
+          <button onclick="App.switchTab('modules')" class="underline font-bold text-white ml-3 shrink-0">Ir para Módulos →</button>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+          
+          <!-- Coluna Esquerda: Preview do Crachá Digital -->
+          <div class="lg:col-span-4 ihm-card rounded-2xl p-5 flex flex-col items-center text-center space-y-3 border-2 border-cyan-500/30">
+            <div class="w-full flex items-center justify-between text-[10px] font-mono text-slate-400 border-b border-slate-700 pb-2">
+              <span>CRACHÁ IHM</span>
+              <span class="text-emerald-400 font-bold">● ATIVO</span>
+            </div>
+
+            <div id="reg-preview-avatar" class="w-28 h-28 rounded-2xl bg-slate-900 border-2 border-cyan-400/70 p-2 shadow-lg shadow-cyan-500/15">
+              <!-- SVG Avatar Preview -->
+            </div>
+
+            <div>
+              <div id="reg-preview-name" class="font-display font-bold text-lg text-white">Operador(a)</div>
+              <div id="reg-preview-turma" class="text-xs font-mono text-cyan-400 mt-0.5">2º Ano A - Manhã</div>
+              <div id="reg-preview-rank" class="inline-block mt-2 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-amber-500/15 text-amber-300 border border-amber-500/30">
+                Aprendiz
+              </div>
+            </div>
+
+            <div class="w-full pt-3 border-t border-slate-700/80 flex justify-around font-mono text-xs">
+              <div>
+                <div class="text-slate-400 text-[10px]">PONTOS</div>
+                <div id="reg-preview-xp" class="font-bold text-amber-400">0 XP</div>
+              </div>
+              <div>
+                <div class="text-slate-400 text-[10px]">MISSÕES</div>
+                <div id="reg-preview-done" class="font-bold text-emerald-400">0/18</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Coluna Direita: Formulário + Grade dos 8 Avatares -->
+          <div class="lg:col-span-8 space-y-5">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label for="reg-name-input" class="block text-xs font-mono uppercase text-slate-400 mb-1.5">
+                  Nome ou Apelido do Aluno *
+                </label>
+                <input
+                  id="reg-name-input"
+                  type="text"
+                  maxlength="28"
+                  placeholder="Ex: Lucas Mendes"
+                  oninput="App.updateRegisterPreview()"
+                  class="w-full bg-slate-950 border border-slate-700 focus:border-cyan-400 rounded-xl px-4 py-3 text-sm font-semibold text-white placeholder-slate-500 focus:outline-none transition-colors"
+                />
+              </div>
+
+              <div>
+                <label for="reg-turma-select" class="block text-xs font-mono uppercase text-slate-400 mb-1.5">
+                  Turma / Turno *
+                </label>
+                <select
+                  id="reg-turma-select"
+                  onchange="App.updateRegisterPreview()"
+                  class="w-full bg-slate-950 border border-slate-700 focus:border-cyan-400 rounded-xl px-4 py-3 text-sm font-semibold text-white focus:outline-none transition-colors"
+                >
+                  <option value="2º Ano A - Manhã">2º Ano A - Manhã</option>
+                  <option value="2º Ano B - Tarde">2º Ano B - Tarde</option>
+                  <option value="2º Ano C - Noite">2º Ano C - Noite</option>
+                  <option value="Técnico Subsequente">Técnico Subsequente</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Seletor dos 8 Avatares Industriais SVG -->
+            <div>
+              <label class="block text-xs font-mono uppercase text-slate-400 mb-2">
+                Escolha seu Avatar Industrial (8 Especialidades):
+              </label>
+              <div id="avatar-selector-grid" class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <!-- 8 Cards de Avatares gerados via JS -->
+              </div>
+            </div>
+
+            <!-- Botão Salvar Credencial -->
+            <div class="pt-2 flex flex-col sm:flex-row items-center justify-between gap-3">
+              <button onclick="App.saveOperatorProfile()" class="w-full sm:w-auto px-7 py-3.5 rounded-xl bg-gradient-to-r from-cyan-500 to-emerald-500 hover:from-cyan-400 hover:to-emerald-400 text-slate-950 font-display font-bold text-sm sm:text-base tracking-wide shadow-lg shadow-cyan-500/20 transition-all active:scale-95">
+                💾 Salvar Credencial e Entrar na Arena
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Troca Rápida entre Alunos Locais já Cadastrados neste Computador -->
+        <div id="local-profiles-box" class="pt-5 border-t border-slate-800 space-y-2.5">
+          <div class="text-xs font-mono text-slate-400">OPERADORES CADASTRADOS NESTE COMPUTADOR (CLIQUE PARA ALTERNAR):</div>
+          <div id="local-profiles-list" class="flex flex-wrap gap-2">
+            <!-- Chips gerados via JS -->
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- ABA 3: 🏆 RANKING DA TURMA                                          -->
+    <!-- =================================================================== -->
+    <section id="view-ranking" class="hidden space-y-6">
+      
+      <!-- Cabeçalho do Ranking -->
+      <div class="ihm-panel rounded-2xl p-5 sm:p-7 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <span class="text-xs font-mono uppercase tracking-wider text-amber-400 font-bold">CLASSIFICAÇÃO GERAL • LABORATÓRIO DE AUTOMAÇÃO</span>
+          <h2 class="font-display text-2xl sm:text-3xl font-bold text-white mt-0.5">
+            🏆 RANKING DA TURMA
+          </h2>
+          <p class="text-xs sm:text-sm text-slate-400 mt-1">
+            Dispute o pódio com seus colegas! Complete desafios com rapidez e precisão para subir de patente.
+          </p>
+        </div>
+
+        <div id="ranking-reset-area" class="shrink-0">
+          <button onclick="App.requestRankingReset()" class="px-4 py-2.5 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 font-mono font-bold text-xs transition-all">
+            Resetar Ranking Local (Professor)
+          </button>
+        </div>
+      </div>
+
+      <!-- Pódio Visual (Top 3: 2º Prata | 1º Ouro | 3º Bronze) -->
+      <div id="ranking-podium" class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end pt-2">
+        <!-- Pódio gerado via JS -->
+      </div>
+
+      <!-- Tabela Completa Ordenada por XP -->
+      <div class="ihm-panel rounded-2xl overflow-hidden">
+        <div class="px-5 py-3.5 bg-slate-900/90 border-b border-slate-800 flex items-center justify-between">
+          <span class="font-display font-bold text-sm text-white uppercase tracking-wider">Tabela Oficial de Classificação</span>
+          <span class="text-xs font-mono text-cyan-400">Ordenado por Maior XP</span>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="border-b border-slate-800 text-[11px] font-mono uppercase text-slate-400 bg-slate-950/60">
+                <th class="py-3 px-4">Pos.</th>
+                <th class="py-3 px-4">Operador(a)</th>
+                <th class="py-3 px-4 hidden sm:table-cell">Turma</th>
+                <th class="py-3 px-4 text-center">Desafios</th>
+                <th class="py-3 px-4 text-center">Precisão</th>
+                <th class="py-3 px-4 text-right">XP Total</th>
+              </tr>
+            </thead>
+            <tbody id="ranking-table-body" class="divide-y divide-slate-800/70 text-sm">
+              <!-- Linhas geradas via JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- TELA DE SIMULAÇÃO DO DESAFIO (ARENA ATIVA)                          -->
+    <!-- =================================================================== -->
+    <section id="view-challenge" class="hidden space-y-5">
+      
+      <!-- Barra Superior do Desafio: Voltar, Módulo, Nível e Cronômetro Regressivo -->
+      <div class="ihm-panel rounded-2xl p-4 sm:p-5">
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-3">
+          <div class="flex items-center gap-3">
+            <button onclick="App.exitChallenge()" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-600 text-xs font-mono font-bold text-slate-300 transition-colors">
+              ← PAINEL
+            </button>
+            <div>
+              <div class="flex flex-wrap items-center gap-2">
+                <span id="ch-module-badge" class="text-[11px] font-mono font-bold uppercase px-2 py-0.5 rounded bg-cyan-500/15 text-cyan-300 border border-cyan-500/30">
+                  MÓDULO 1
+                </span>
+                <span id="ch-level-badge" class="text-[11px] font-mono font-bold uppercase px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                  NÍVEL: FÁCIL
+                </span>
+                <span id="ch-step-text" class="text-xs font-mono text-slate-400">Desafio 1 de 3</span>
+              </div>
+              <h2 id="ch-title" class="font-display text-lg sm:text-xl font-bold text-white mt-1">Título do Desafio</h2>
+            </div>
+          </div>
+
+          <!-- Cronômetro Digital Regressivo -->
+          <div id="ch-timer-box" class="flex items-center gap-3 bg-slate-950 border border-slate-700 rounded-xl px-4 py-2 transition-colors">
+            <div class="text-right">
+              <div class="text-[9px] font-mono uppercase text-slate-400">TEMPO RESTANTE</div>
+              <div id="ch-timer-text" class="text-xl sm:text-2xl font-mono font-extrabold text-cyan-400 tabular-nums">00:35</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Barra de Progresso Visual do Tempo -->
+        <div class="w-full h-2.5 bg-slate-950 rounded-full overflow-hidden border border-slate-800 p-0.5">
+          <div id="ch-timer-bar" class="h-full rounded-full bg-gradient-to-r from-cyan-400 to-emerald-400 transition-all duration-100" style="width: 100%;"></div>
+        </div>
+      </div>
+
+      <!-- Blocos Contexto Industrial + Objetivo da Missão -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="ihm-panel rounded-2xl p-4 sm:p-5 border-l-4 border-l-cyan-400 space-y-1.5">
+          <div class="text-xs font-mono font-extrabold uppercase tracking-wider text-cyan-400 flex items-center gap-2">
+            <span>🏭</span> CONTEXTO INDUSTRIAL
+          </div>
+          <p id="ch-context" class="text-sm text-slate-200 leading-relaxed"></p>
+        </div>
+
+        <div class="ihm-panel rounded-2xl p-4 sm:p-5 border-l-4 border-l-amber-400 space-y-1.5">
+          <div class="text-xs font-mono font-extrabold uppercase tracking-wider text-amber-400 flex items-center gap-2">
+            <span>🎯</span> OBJETIVO DA MISSÃO
+          </div>
+          <p id="ch-objective" class="text-sm text-slate-200 leading-relaxed"></p>
+        </div>
+      </div>
+
+      <!-- Palco Principal: Esquema Técnico SVG Interativo/Ilustrativo + 4 Alternativas -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+        
+        <!-- Esquema Técnico SVG (Coluna Esquerda 6/12) -->
+        <div class="lg:col-span-6 ihm-panel rounded-2xl p-4 sm:p-5 space-y-3">
+          <div class="flex items-center justify-between text-xs font-mono text-slate-400 border-b border-slate-800 pb-2">
+            <span>ESQUEMA TÉCNICO / TELEMETRIA IHM</span>
+            <span id="ch-svg-hint" class="text-cyan-400">Diagrama Vetorial</span>
+          </div>
+          <div id="ch-svg-stage" class="bg-slate-950 border border-slate-800 rounded-xl p-3 flex flex-col items-center justify-center min-h-[230px]">
+            <!-- SVG dinâmico injetado aqui -->
+          </div>
+        </div>
+
+        <!-- 4 Alternativas Técnicas (Coluna Direita 6/12) -->
+        <div class="lg:col-span-6 ihm-panel rounded-2xl p-4 sm:p-5 space-y-3">
+          <div class="text-xs font-mono uppercase tracking-wider text-slate-400 border-b border-slate-800 pb-2">
+            SELECIONE A SOLUÇÃO TÉCNICA CORRETA:
+          </div>
+          <div id="ch-options-list" class="space-y-2.5">
+            <!-- 4 Botões de Alternativas gerados via JS -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Painel de Feedback Explicativo Detalhado (Aparece após responder ou acabar o tempo) -->
+      <div id="ch-feedback-panel" class="hidden ihm-panel rounded-2xl p-5 sm:p-6 border-2 transition-all space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-800">
+          <div class="flex items-center gap-3">
+            <div id="fb-badge-icon" class="w-11 h-11 rounded-xl flex items-center justify-center font-bold text-xl shrink-0"></div>
+            <div>
+              <div id="fb-status-label" class="text-xs font-mono font-extrabold uppercase tracking-wider"></div>
+              <h3 id="fb-headline" class="font-display text-lg sm:text-xl font-bold text-white"></h3>
+            </div>
+          </div>
+          <div id="fb-xp-tag" class="px-4 py-2 rounded-xl font-mono font-extrabold text-xs sm:text-sm self-start sm:self-center"></div>
+        </div>
+
+        <div class="space-y-1.5">
+          <div class="text-xs font-mono uppercase font-bold text-cyan-400">📘 EXPLICAÇÃO TÉCNICA DETALHADA:</div>
+          <p id="fb-explanation" class="text-sm sm:text-base text-slate-200 leading-relaxed"></p>
+        </div>
+
+        <div class="pt-2 flex flex-wrap justify-end gap-3">
+          <button id="fb-retry-btn" onclick="App.retryCurrentChallenge()" class="hidden px-5 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/40 font-mono font-bold text-xs sm:text-sm transition-all">
+            ↻ Tentar Novamente
+          </button>
+          <button id="fb-next-btn" onclick="App.advanceChallenge()" class="px-7 py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-emerald-500 hover:from-cyan-400 hover:to-emerald-400 text-slate-950 font-display font-bold text-sm sm:text-base tracking-wide shadow-lg transition-all">
+            Próximo Desafio →
+          </button>
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- Rodapé -->
+  <footer class="border-t border-slate-800/80 py-4 px-4 text-center text-xs text-slate-500 font-mono">
+    AutoTech Arena • Curso Técnico em Automação Industrial (2º Ano EM) • Simulador IHM/SCADA
+  </footer>
+
+  <!-- ===================================================================== -->
+  <!-- JAVASCRIPT: ÁUDIO, 8 AVATARES SVG, 18 DESAFIOS, CADASTRO E RANKING    -->
+  <!-- ===================================================================== -->
+  <script>
+    /**
+     * 1. MOTOR DE EFEITOS SONOROS VIA WEB AUDIO API
+     */
+    const AudioFX = {
+      ctx: null,
+      enabled: true,
+
+      boot() {
+        if (!this.ctx) {
+          const AC = window.AudioContext || window.webkitAudioContext;
+          if (AC) this.ctx = new AC();
+        }
+        if (this.ctx && this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      },
+
+      beep(freq = 560, duration = 0.05, type = 'triangle', vol = 0.14) {
+        if (!this.enabled) return;
+        this.boot();
+        if (!this.ctx) return;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+        gain.gain.setValueAtTime(vol, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start();
+        osc.stop(this.ctx.currentTime + duration + 0.01);
+      },
+
+      click() {
+        this.beep(620, 0.045, 'triangle', 0.14);
+      },
+
+      tickUrgent() {
+        this.beep(920, 0.07, 'sine', 0.12);
+      },
+
+      success() {
+        if (!this.enabled) return;
+        this.boot();
+        if (!this.ctx) return;
+        [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => {
+          setTimeout(() => this.beep(f, 0.22, 'triangle', 0.16), i * 85);
+        });
+      },
+
+      error() {
+        if (!this.enabled) return;
+        this.boot();
+        if (!this.ctx) return;
+        this.beep(220, 0.16, 'sawtooth', 0.15);
+        setTimeout(() => this.beep(165, 0.22, 'sawtooth', 0.15), 150);
+      }
+    };
+
+    /**
+     * 2. CATÁLOGO DOS 8 AVATARES INDUSTRIAIS EM SVG VETORIAL PURO
+     */
+    const AVATARS = [
+      {
+        id: 0,
+        name: 'Técnico de CLP',
+        role: 'Capacete & Tablet',
+        svg: `<svg viewBox="0 0 100 100" class="w-full h-full">
+          <rect width="100" height="100" rx="16" fill="#0f172a"/>
+          <circle cx="50" cy="54" r="21" fill="#f1c27d"/>
+          <path d="M27 44 C27 24, 73 24, 73 44 Z" fill="#f59e0b"/>
+          <rect x="23" y="42" width="54" height="6" rx="3" fill="#d97706"/>
+          <rect x="35" y="49" width="30" height="9" rx="4" fill="#06b6d4" opacity="0.85"/>
+          <path d="M25 95 C25 76, 75 76, 75 95 Z" fill="#1e293b" stroke="#06b6d4" stroke-width="2"/>
+          <rect x="56" y="72" width="24" height="18" rx="3" fill="#0b0f19" stroke="#10b981" stroke-width="2"/>
+          <line x1="60" y1="78" x2="76" y2="78" stroke="#10b981" stroke-width="2"/>
+          <line x1="60" y1="83" x2="72" y2="83" stroke="#06b6d4" stroke-width="2"/>
+        </svg>`
+      },
+      {
+        id: 1,
+        name: 'Engenheira de Automação',
+        role: 'Óculos de Proteção',
+        svg: `<svg viewBox="0 0 100 100" class="w-full h-full">
+          <rect width="100" height="100" rx="16" fill="#0f172a"/>
+          <path d="M26 45 C26 22, 74 22, 74 45 L77 72 L23 72 Z" fill="#334155"/>
+          <circle cx="50" cy="52" r="20" fill="#e0ac69"/>
+          <rect x="33" y="46" width="34" height="11" rx="4" fill="#06b6d4" opacity="0.8" stroke="#fff" stroke-width="1.5"/>
+          <path d="M43 62 Q50 67 57 62" fill="none" stroke="#7c2d12" stroke-width="2" stroke-linecap="round"/>
+          <path d="M24 95 C24 75, 76 75, 76 95 Z" fill="#e2e8f0"/>
+          <rect x="54" y="80" width="12" height="8" rx="2" fill="#06b6d4"/>
+        </svg>`
+      },
+      {
+        id: 2,
+        name: 'Especialista em Robótica',
+        role: 'Braço Mecânico',
+        svg: `<svg viewBox="0 0 100 100" class="w-full h-full">
+          <rect width="100" height="100" rx="16" fill="#0f172a"/>
+          <circle cx="44" cy="50" r="19" fill="#d4a373"/>
+          <rect x="28" y="43" width="32" height="10" rx="3" fill="#111827" stroke="#f59e0b" stroke-width="2"/>
+          <circle cx="38" cy="48" r="2.5" fill="#06b6d4"/>
+          <circle cx="50" cy="48" r="2.5" fill="#06b6d4"/>
+          <path d="M20 95 C20 75, 68 75, 68 95 Z" fill="#1e293b"/>
+          <polyline points="72,92 84,65 70,40" fill="none" stroke="#f59e0b" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="84" cy="65" r="5" fill="#06b6d4"/>
+          <path d="M64 36 L70 40 L76 35" fill="none" stroke="#cbd5e1" stroke-width="3" stroke-linecap="round"/>
+        </svg>`
+      },
+      {
+        id: 3,
+        name: 'Mestre da Pneumática',
+        role: 'Manômetro & Ar',
+        svg: `<svg viewBox="0 0 100 100" class="w-full h-full">
+          <rect width="100" height="100" rx="16" fill="#0f172a"/>
+          <circle cx="48" cy="52" r="20" fill="#f1c27d"/>
+          <rect x="24" y="42" width="7" height="18" rx="3" fill="#ef4444"/>
+          <rect x="65" y="42" width="7" height="18" rx="3" fill="#ef4444"/>
+          <path d="M28 42 Q48 25 68 42" fill="none" stroke="#ef4444" stroke-width="4"/>
+          <circle cx="41" cy="50" r="2.5" fill="#1e293b"/>
+          <circle cx="55" cy="50" r="2.5" fill="#1e293b"/>
+          <path d="M24 95 C24 76, 72 76, 72 95 Z" fill="#0369a1"/>
+          <circle cx="78" cy="72" r="14" fill="#111827" stroke="#06b6d4" stroke-width="2.5"/>
+          <line x1="78" y1="72" x2="85" y2="64" stroke="#f59e0b" stroke-width="2.5" stroke-linecap="round"/>
+        </svg>`
+      },
+      {
+        id: 4,
+        name: 'Eletrotécnico de Potência',
+        role: 'Motor Trifásico',
+        svg: `<svg viewBox="0 0 100 100" class="w-full h-full">
+          <rect width="100" height="100" rx="16" fill="#0f172a"/>
+          <circle cx="50" cy="53" r="20" fill="#c68642"/>
+          <path d="M28 43 C28 24, 72 24, 72 43 Z" fill="#06b6d4"/>
+          <polygon points="50,27 45,35 51,35 48,41 56,33 50,33" fill="#f59e0b"/>
+          <circle cx="43" cy="52" r="2.5" fill="#111827"/>
+          <circle cx="57" cy="52" r="2.5" fill="#111827"/>
+          <path d="M24 95 C24 76, 76 76, 76 95 Z" fill="#1e293b" stroke="#f59e0b" stroke-width="2"/>
+          <text x="50" y="90" text-anchor="middle" fill="#f59e0b" font-family="monospace" font-size="11" font-weight="bold">3~ 380V</text>
+        </svg>`
+      },
+      {
+        id: 5,
+        name: 'Operador IHM Cyber',
+        role: 'Telemetria SCADA',
+        svg: `<svg viewBox="0 0 100 100" class="w-full h-full">
+          <rect width="100" height="100" rx="16" fill="#0f172a"/>
+          <circle cx="50" cy="52" r="20" fill="#e0ac69"/>
+          <path d="M30 44 Q50 26 70 44" fill="#1e293b"/>
+          <rect x="32" y="45" width="36" height="10" rx="5" fill="#10b981" opacity="0.85"/>
+          <circle cx="71" cy="54" r="4" fill="#06b6d4"/>
+          <path d="M71 54 L58 63" stroke="#06b6d4" stroke-width="2"/>
+          <path d="M25 95 C25 76, 75 76, 75 95 Z" fill="#111827" stroke="#10b981" stroke-width="2"/>
+          <polyline points="36,87 43,87 46,81 51,92 55,87 64,87" fill="none" stroke="#10b981" stroke-width="2"/>
+        </svg>`
+      },
+      {
+        id: 6,
+        name: 'Inspetor de Sensores',
+        role: 'Scanner Laser',
+        svg: `<svg viewBox="0 0 100 100" class="w-full h-full">
+          <rect width="100" height="100" rx="16" fill="#0f172a"/>
+          <circle cx="48" cy="52" r="20" fill="#f1c27d"/>
+          <rect x="33" y="45" width="14" height="10" rx="2" fill="#1e293b" stroke="#06b6d4" stroke-width="1.5"/>
+          <rect x="51" y="45" width="14" height="10" rx="2" fill="#ef4444" stroke="#fca5a5" stroke-width="1.5"/>
+          <line x1="65" y1="50" x2="94" y2="44" stroke="#ef4444" stroke-width="2" stroke-dasharray="3 2"/>
+          <path d="M24 95 C24 76, 74 76, 74 95 Z" fill="#334155"/>
+          <circle cx="49" cy="85" r="5" fill="#10b981"/>
+        </svg>`
+      },
+      {
+        id: 7,
+        name: 'Androide Indústria 4.0',
+        role: 'IA & IoT Industrial',
+        svg: `<svg viewBox="0 0 100 100" class="w-full h-full">
+          <rect width="100" height="100" rx="16" fill="#0f172a"/>
+          <line x1="50" y1="14" x2="50" y2="27" stroke="#06b6d4" stroke-width="3"/>
+          <circle cx="50" cy="12" r="4" fill="#10b981"/>
+          <rect x="28" y="27" width="44" height="40" rx="12" fill="#cbd5e1" stroke="#06b6d4" stroke-width="2.5"/>
+          <rect x="34" y="38" width="32" height="14" rx="6" fill="#0b0f19"/>
+          <circle cx="42" cy="45" r="3.5" fill="#06b6d4"/>
+          <circle cx="58" cy="45" r="3.5" fill="#06b6d4"/>
+          <line x1="42" y1="58" x2="58" y2="58" stroke="#10b981" stroke-width="3" stroke-linecap="round"/>
+          <path d="M24 95 C24 74, 76 74, 76 95 Z" fill="#1e293b" stroke="#06b6d4" stroke-width="2"/>
+          <text x="50" y="90" text-anchor="middle" fill="#06b6d4" font-family="monospace" font-size="11" font-weight="bold">I4.0</text>
+        </svg>`
+      }
+    ];
+
+    /**
+     * 3. BANCO DE DADOS PEDAGÓGICOS — 6 MÓDULOS COM 3 DESAFIOS CADA (18 DESAFIOS)
+     */
+    const MODULES = [
+      {
+        id: 'm1',
+        number: 1,
+        title: 'PORTAS LÓGICAS',
+        subtitle: 'Lógica Combinacional, Intertravamento e Segurança',
+        accent: 'cyan',
+        iconSvg: `<svg class="w-8 h-8 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M4 8h4M4 16h4M8 5h4a7 7 0 010 14H8V5zM19 12h3" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>`,
+        challenges: [
+          {
+            id: 'm1_c1',
+            level: 'Fácil',
+            timeLimit: 35,
+            title: 'Intertravamento Bimanual na Prensa Hidráulica',
+            context: 'Na linha de estampagem, uma prensa hidráulica oferece risco de esmagamento das mãos do operador. Pela norma NR-12, o avanço do cilindro (Q = 1) só pode ocorrer quando os dois botões bimanuais (B1 e B2) forem pressionados simultaneamente.',
+            objective: 'Identifique qual porta lógica garante que a saída Q seja 1 exclusivamente quando B1 = 1 e B2 = 1 ao mesmo tempo.',
+            svgHint: 'Clique em B1 ou B2 no diagrama para simular!',
+            renderSvg: (state, rerender) => {
+              const b1 = state.b1 ?? 1;
+              const b2 = state.b2 ?? 0;
+              const q = (b1 && b2) ? 1 : 0;
+              return `
+                <svg viewBox="0 0 420 165" class="w-full h-auto select-none">
+                  <line x1="85" y1="50" x2="175" y2="50" stroke="${b1 ? '#10b981' : '#475569'}" stroke-width="4" class="${b1 ? 'wire-live' : ''}"/>
+                  <line x1="85" y1="115" x2="175" y2="115" stroke="${b2 ? '#10b981' : '#475569'}" stroke-width="4" class="${b2 ? 'wire-live' : ''}"/>
+                  <line x1="255" y1="82" x2="335" y2="82" stroke="${q ? '#10b981' : '#475569'}" stroke-width="5" class="${q ? 'wire-live' : ''}"/>
+
+                  <g onclick="App.toggleSvgVar('b1')" class="cursor-pointer">
+                    <rect x="15" y="32" width="70" height="36" rx="8" fill="${b1 ? '#064e3b' : '#1e293b'}" stroke="${b1 ? '#10b981' : '#64748b'}" stroke-width="2"/>
+                    <text x="50" y="54" text-anchor="middle" fill="#fff" font-family="monospace" font-size="12" font-weight="bold">B1 = ${b1}</text>
+                  </g>
+                  <g onclick="App.toggleSvgVar('b2')" class="cursor-pointer">
+                    <rect x="15" y="97" width="70" height="36" rx="8" fill="${b2 ? '#064e3b' : '#1e293b'}" stroke="${b2 ? '#10b981' : '#64748b'}" stroke-width="2"/>
+                    <text x="50" y="119" text-anchor="middle" fill="#fff" font-family="monospace" font-size="12" font-weight="bold">B2 = ${b2}</text>
+                  </g>
+
+                  <path d="M175,35 H215 A40,47 0 0,1 215,130 H175 Z" fill="#111827" stroke="#06b6d4" stroke-width="2.5"/>
+                  <text x="208" y="87" text-anchor="middle" fill="#06b6d4" font-family="monospace" font-size="14" font-weight="bold">?</text>
+
+                  <rect x="335" y="55" width="70" height="54" rx="10" fill="${q ? '#065f46' : '#1e293b'}" stroke="${q ? '#10b981' : '#475569'}" stroke-width="2"/>
+                  <text x="370" y="80" text-anchor="middle" fill="#fff" font-family="monospace" font-size="12" font-weight="bold">Q = ${q}</text>
+                  <text x="370" y="96" text-anchor="middle" fill="#94a3b8" font-family="monospace" font-size="9">PRENSA</text>
+                </svg>
+              `;
+            },
+            options: [
+              'Porta AND (E) — Saída Q = 1 apenas quando B1 = 1 e B2 = 1 simultaneamente.',
+              'Porta OR (OU) — Saída Q = 1 quando qualquer um dos botões for pressionado.',
+              'Porta XOR (OU-Exclusivo) — Saída Q = 1 quando apenas um botão estiver ativo.',
+              'Porta NOT (Inversora) — Inverte o sinal de entrada para acionar a prensa.'
+            ],
+            correctIndex: 0,
+            explanation: 'A porta lógica AND (E) exige que TODAS as entradas estejam em nível lógico 1 para liberar a saída Q = 1 (Q = B1 · B2). Se o operador soltar qualquer uma das mãos, a saída cai imediatamente para 0, garantindo a segurança NR-12.'
+          },
+          {
+            id: 'm1_c2',
+            level: 'Médio',
+            timeLimit: 40,
+            title: 'Alarme Redundante de Incêndio e Botoeira de Emergência',
+            context: 'O painel central dispara a sirene de evacuação (Q = 1) se o detector óptico de fumaça S1 atuar (S1 = 1), OU se o detector térmico S2 atuar (S2 = 1), OU se o botão de emergência NF romper seu sinal (E = 0, exigindo inversão para virar 1).',
+            objective: 'Determine a expressão booleana que representa corretamente o acionamento da sirene Q.',
+            svgHint: 'Esquema Combinacional OR + NOT',
+            renderSvg: () => `
+              <svg viewBox="0 0 420 165" class="w-full h-auto">
+                <line x1="75" y1="35" x2="210" y2="35" stroke="#f59e0b" stroke-width="3"/>
+                <line x1="75" y1="80" x2="210" y2="80" stroke="#f59e0b" stroke-width="3"/>
+                <line x1="75" y1="130" x2="125" y2="130" stroke="#ef4444" stroke-width="3"/>
+                <polygon points="125,116 155,130 125,144" fill="#1e293b" stroke="#ef4444" stroke-width="2"/>
+                <circle cx="160" cy="130" r="4" fill="#ef4444"/>
+                <line x1="164" y1="130" x2="210" y2="130" stroke="#06b6d4" stroke-width="3"/>
+
+                <rect x="15" y="22" width="60" height="26" rx="6" fill="#1e293b" stroke="#f59e0b"/><text x="45" y="39" text-anchor="middle" fill="#fff" font-family="monospace" font-size="11">S1 (Fumaça)</text>
+                <rect x="15" y="67" width="60" height="26" rx="6" fill="#1e293b" stroke="#f59e0b"/><text x="45" y="84" text-anchor="middle" fill="#fff" font-family="monospace" font-size="11">S2 (Calor)</text>
+                <rect x="15" y="117" width="60" height="26" rx="6" fill="#1e293b" stroke="#ef4444"/><text x="45" y="134" text-anchor="middle" fill="#fca5a5" font-family="monospace" font-size="11">E (NF=0)</text>
+
+                <rect x="210" y="25" width="75" height="115" rx="14" fill="#111827" stroke="#06b6d4" stroke-width="2.5"/>
+                <text x="247" y="86" text-anchor="middle" fill="#06b6d4" font-family="monospace" font-size="15" font-weight="bold">OR</text>
+
+                <line x1="285" y1="82" x2="340" y2="82" stroke="#10b981" stroke-width="4" class="wire-live"/>
+                <rect x="340" y="57" width="65" height="50" rx="10" fill="#064e3b" stroke="#10b981" stroke-width="2"/>
+                <text x="372" y="86" text-anchor="middle" fill="#fff" font-family="monospace" font-size="12" font-weight="bold">SIRENE Q</text>
+              </svg>
+            `,
+            options: [
+              'Q = S1 + S2 + Ē  (S1 OR S2 OR NOT E)',
+              'Q = S1 · S2 · E  (S1 AND S2 AND E)',
+              'Q = (S1 · S2) + E  ((S1 AND S2) OR E)',
+              'Q = S1 ⊕ S2 ⊕ E  (XOR entre todas as entradas)'
+            ],
+            correctIndex: 0,
+            explanation: 'Como basta QUALQUER uma das condições de risco ocorrer, utilizamos a porta OR (+). Já a botoeira de emergência NF envia 0 quando pressionada/rompida, exigindo uma porta inversora NOT (Ē) para transformar 0 em 1 e disparar a sirene.'
+          },
+          {
+            id: 'm1_c3',
+            level: 'Difícil',
+            timeLimit: 45,
+            title: 'Circuito Lógico para Esteira Seletora de Caixas',
+            context: 'Dois sensores ópticos (S1 e S2) verificam a altura das caixas na esteira. Se ambos lerem 0 (sem caixa) ou ambos lerem 1 (caixa alta aprovada), a esteira segue. Se os sensores divergirem (0 e 1, ou 1 e 0 — caixa inclinada/defeituosa), o atuador de rejeito Q deve disparar (Q = 1).',
+            objective: 'Selecione a porta lógica que detecta divergência entre dois sinais digitais (saída 1 apenas quando as entradas são diferentes).',
+            svgHint: 'Comparador Digital de Divergência',
+            renderSvg: () => `
+              <svg viewBox="0 0 420 165" class="w-full h-auto">
+                <rect x="20" y="20" width="185" height="125" rx="10" fill="#111827" stroke="#334155" stroke-width="2"/>
+                <text x="112" y="42" text-anchor="middle" fill="#06b6d4" font-family="monospace" font-size="11" font-weight="bold">TABELA-VERDADE REJEITO</text>
+                <text x="112" y="65" text-anchor="middle" fill="#94a3b8" font-family="monospace" font-size="11">S1=0 | S2=0  ──▶  Q = 0</text>
+                <text x="112" y="86" text-anchor="middle" fill="#f59e0b" font-family="monospace" font-size="11" font-weight="bold">S1=0 | S2=1  ──▶  Q = 1</text>
+                <text x="112" y="107" text-anchor="middle" fill="#f59e0b" font-family="monospace" font-size="11" font-weight="bold">S1=1 | S2=0  ──▶  Q = 1</text>
+                <text x="112" y="128" text-anchor="middle" fill="#94a3b8" font-family="monospace" font-size="11">S1=1 | S2=1  ──▶  Q = 0</text>
+
+                <line x1="205" y1="65" x2="255" y2="65" stroke="#06b6d4" stroke-width="3"/>
+                <line x1="205" y1="100" x2="255" y2="100" stroke="#06b6d4" stroke-width="3"/>
+                <rect x="255" y="48" width="75" height="68" rx="12" fill="#1e293b" stroke="#f59e0b" stroke-width="2.5"/>
+                <text x="292" y="87" text-anchor="middle" fill="#f59e0b" font-family="monospace" font-size="15" font-weight="bold">? ?</text>
+                <line x1="330" y1="82" x2="365" y2="82" stroke="#10b981" stroke-width="4"/>
+                <circle cx="382" cy="82" r="16" fill="#064e3b" stroke="#10b981" stroke-width="2"/>
+                <text x="382" y="86" text-anchor="middle" fill="#fff" font-family="monospace" font-size="11" font-weight="bold">Q</text>
+              </svg>
+            `,
+            options: [
+              'Porta XOR (OU-Exclusivo) — Entrega saída 1 apenas quando S1 ≠ S2.',
+              'Porta NAND (Não-E) — Entrega saída 0 apenas quando S1 = 1 e S2 = 1.',
+              'Porta NOR (Não-OU) — Entrega saída 1 apenas quando S1 = 0 e S2 = 0.',
+              'Porta AND (E) — Entrega saída 1 apenas quando S1 = 1 e S2 = 1.'
+            ],
+            correctIndex: 0,
+            explanation: 'A porta XOR (OU-Exclusivo, símbolo ⊕) funciona como um comparador de desigualdade: quando S1 e S2 são iguais (0,0 ou 1,1), a saída é 0; quando divergem (0,1 ou 1,0), a saída vai para 1, acionando o rejeito.'
+          }
+        ]
+      },
+      {
+        id: 'm2',
+        number: 2,
+        title: 'CLP E LÓGICA LADDER',
+        subtitle: 'Programação IEC 61131-3, Temporizadores e Contadores',
+        accent: 'emerald',
+        iconSvg: `<svg class="w-8 h-8 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M4 4v16M20 4v16M4 9h4m4 0h4m4 0h-4M8 7v4M12 7v4M17 7a2 2 0 100 4 2 2 0 000-4zM4 15h4m4 0h8M8 13v4M12 13v4" stroke-linecap="round"/>
+        </svg>`,
+        challenges: [
+          {
+            id: 'm2_c1',
+            level: 'Fácil',
+            timeLimit: 35,
+            title: 'Circuito de Selo (Retenção) na Partida de Bomba',
+            context: 'No programa Ladder abaixo, a botoeira de pulso START (I0.0) liga a bomba (Q0.0), enquanto a botoeira STOP (I0.1, contato NF |/| em repouso) a desliga. Para a bomba continuar ligada após o operador soltar START, foi inserido um contato em paralelo com I0.0.',
+            objective: 'Identifique qual elemento deve ser programado em paralelo com I0.0 para realizar a retenção (selo) do circuito.',
+            svgHint: 'Clique em START ou STOP para testar o selo!',
+            renderSvg: (state) => {
+              const q = state.q ?? 1;
+              const col = q ? '#10b981' : '#64748b';
+              return `
+                <svg viewBox="0 0 430 165" class="w-full h-auto select-none">
+                  <!-- Barramentos L+ e M -->
+                  <line x1="25" y1="20" x2="25" y2="145" stroke="#10b981" stroke-width="4"/>
+                  <line x1="405" y1="20" x2="405" y2="145" stroke="#64748b" stroke-width="4"/>
+
+                  <!-- Ramo Superior I0.0 -->
+                  <line x1="25" y1="45" x2="75" y2="45" stroke="#10b981" stroke-width="3"/>
+                  <text x="90" y="30" text-anchor="middle" fill="#94a3b8" font-family="monospace" font-size="10">I0.0 (START)</text>
+                  <line x1="75" y1="36" x2="75" y2="54" stroke="#06b6d4" stroke-width="3"/>
+                  <line x1="105" y1="36" x2="105" y2="54" stroke="#06b6d4" stroke-width="3"/>
+                  <line x1="105" y1="45" x2="155" y2="45" stroke="${col}" stroke-width="3"/>
+
+                  <!-- Ramo Paralelo (Selo) -->
+                  <polyline points="45,45 45,105 75,105" fill="none" stroke="${col}" stroke-width="3"/>
+                  <text x="90" y="90" text-anchor="middle" fill="#f59e0b" font-family="monospace" font-size="10" font-weight="bold">SELO (?)</text>
+                  <line x1="75" y1="96" x2="75" y2="114" stroke="#f59e0b" stroke-width="3"/>
+                  <line x1="105" y1="96" x2="105" y2="114" stroke="#f59e0b" stroke-width="3"/>
+                  <polyline points="105,105 155,105 155,45" fill="none" stroke="${col}" stroke-width="3"/>
+
+                  <!-- Linha Série I0.1 (NF) -> Bobina Q0.0 -->
+                  <line x1="155" y1="45" x2="215" y2="45" stroke="${col}" stroke-width="3"/>
+                  <text x="230" y="30" text-anchor="middle" fill="#94a3b8" font-family="monospace" font-size="10">I0.1 (STOP)</text>
+                  <line x1="215" y1="36" x2="215" y2="54" stroke="#06b6d4" stroke-width="3"/>
+                  <line x1="245" y1="36" x2="245" y2="54" stroke="#06b6d4" stroke-width="3"/>
+                  <line x1="220" y1="53" x2="240" y2="37" stroke="#ef4444" stroke-width="2.5"/>
+                  <line x1="245" y1="45" x2="320" y2="45" stroke="${col}" stroke-width="3"/>
+
+                  <!-- Bobina Q0.0 -->
+                  <text x="342" y="30" text-anchor="middle" fill="#10b981" font-family="monospace" font-size="10" font-weight="bold">Q0.0 (BOMBA)</text>
+                  <text x="342" y="50" text-anchor="middle" fill="${q ? '#10b981' : '#94a3b8'}" font-family="monospace" font-size="15" font-weight="bold">—( )—</text>
+                  <line x1="365" y1="45" x2="405" y2="45" stroke="${col}" stroke-width="3"/>
+
+                  <!-- Botões Interativos -->
+                  <g onclick="App.setSvgState('q', 1)" class="cursor-pointer">
+                    <rect x="185" y="102" width="90" height="32" rx="7" fill="#065f46" stroke="#10b981" stroke-width="1.5"/>
+                    <text x="230" y="122" text-anchor="middle" fill="#fff" font-family="monospace" font-size="11" font-weight="bold">PULSAR START</text>
+                  </g>
+                  <g onclick="App.setSvgState('q', 0)" class="cursor-pointer">
+                    <rect x="290" y="102" width="90" height="32" rx="7" fill="#7f1d1d" stroke="#ef4444" stroke-width="1.5"/>
+                    <text x="335" y="122" text-anchor="middle" fill="#fff" font-family="monospace" font-size="11" font-weight="bold">PULSAR STOP</text>
+                  </g>
+                </svg>
+              `;
+            },
+            options: [
+              'Contato Normalmente Aberto (NA | |) endereçado à própria saída Q0.0.',
+              'Contato Normalmente Fechado (NF |/| ) endereçado à saída Q0.0.',
+              'Temporizador TOF (Off-Delay) ligado em série com a bobina.',
+              'Contato Normalmente Aberto (NA | |) da botoeira de parada I0.1.'
+            ],
+            correctIndex: 0,
+            explanation: 'O selo (latch) usa um contato NA (| |) associado ao endereço da própria bobina Q0.0 em paralelo com o botão de partida. Assim que Q0.0 energiza, seu contato fecha e mantém a corrente lógica circulando mesmo após soltar I0.0.'
+          },
+          {
+            id: 'm2_c2',
+            level: 'Médio',
+            timeLimit: 40,
+            title: 'Temporizador TON e Ciclo de Varredura (Scan) do CLP',
+            context: 'Em uma estufa de secagem, ao acionar o comando I0.2 = 1, o exaustor Q0.3 só deve ligar 10 segundos depois para permitir o pré-aquecimento. Além disso, o técnico precisa saber em qual etapa do ciclo de varredura (Scan) o CLP atualiza fisicamente Q0.3.',
+            objective: 'Selecione a configuração correta do temporizador e a ordem do ciclo de varredura (Scan) do CLP.',
+            svgHint: 'Bloco IEC TON (PT = 10s)',
+            renderSvg: () => `
+              <svg viewBox="0 0 420 160" class="w-full h-auto">
+                <rect x="135" y="25" width="150" height="110" rx="10" fill="#111827" stroke="#06b6d4" stroke-width="2.5"/>
+                <text x="210" y="48" text-anchor="middle" fill="#06b6d4" font-family="monospace" font-size="14" font-weight="bold">TON (T1)</text>
+                <line x1="135" y1="56" x2="285" y2="56" stroke="#334155"/>
+                <line x1="55" y1="78" x2="135" y2="78" stroke="#10b981" stroke-width="3"/>
+                <text x="48" y="82" text-anchor="end" fill="#fff" font-family="monospace" font-size="11">I0.2</text>
+                <text x="145" y="82" fill="#94a3b8" font-family="monospace" font-size="11">IN</text>
+                <line x1="55" y1="112" x2="135" y2="112" stroke="#f59e0b" stroke-width="3"/>
+                <text x="48" y="116" text-anchor="end" fill="#f59e0b" font-family="monospace" font-size="11">T#10s</text>
+                <text x="145" y="116" fill="#94a3b8" font-family="monospace" font-size="11">PT</text>
+
+                <line x1="285" y1="78" x2="365" y2="78" stroke="#10b981" stroke-width="3"/>
+                <text x="275" y="82" text-anchor="end" fill="#94a3b8" font-family="monospace" font-size="11">Q</text>
+                <text x="372" y="82" fill="#10b981" font-family="monospace" font-size="11" font-weight="bold">Q0.3</text>
+                <text x="275" y="116" text-anchor="end" fill="#94a3b8" font-family="monospace" font-size="11">ET</text>
+              </svg>
+            `,
+            options: [
+              'Temporizador TON (On-Delay) com PT = 10s; Scan: Leitura das Entradas → Execução do Programa → Atualização das Saídas.',
+              'Temporizador TOF (Off-Delay) com PT = 10s; Scan: Atualização das Saídas → Leitura das Entradas → Programa.',
+              'Temporizador TP (Pulso) com PT = 10s; Scan: Execução do Programa → Atualização das Saídas → Leitura das Entradas.',
+              'Contador CTU com PV = 10; Scan: Execução simultânea assíncrona sem leitura de entradas.'
+            ],
+            correctIndex: 0,
+            explanation: 'O bloco TON (Timer On-Delay) atrasa a energização da saída Q em 10 segundos (PT) após IN ir para 1. Todo CLP cíclico executa o Scan na sequência: 1º Lê as Entradas (imagem), 2º Processa a Lógica Ladder, 3º Atualiza as Saídas físicas.'
+          },
+          {
+            id: 'm2_c3',
+            level: 'Difícil',
+            timeLimit: 45,
+            title: 'Contador CTU na Paletização de Caixas e Reset',
+            context: 'Uma célula de paletização utiliza um contador crescente CTU (C1) com Preset Value PV = 12 para empilhar 12 caixas por palete. Cada caixa detectada no sensor I0.4 gera uma borda de subida na entrada CU. Ao atingir CV = 12, a saída Q ativa o avanço do palete.',
+            objective: 'O que acontece quando uma 13ª caixa passa antes do Reset e qual entrada zera a contagem acumulada (CV)?',
+            svgHint: 'Bloco IEC CTU (PV = 12)',
+            renderSvg: () => `
+              <svg viewBox="0 0 420 160" class="w-full h-auto">
+                <rect x="135" y="20" width="150" height="120" rx="10" fill="#111827" stroke="#10b981" stroke-width="2.5"/>
+                <text x="210" y="42" text-anchor="middle" fill="#10b981" font-family="monospace" font-size="14" font-weight="bold">CTU (C1)</text>
+                <line x1="135" y1="50" x2="285" y2="50" stroke="#334155"/>
+                <line x1="55" y1="70" x2="135" y2="70" stroke="#06b6d4" stroke-width="3"/>
+                <text x="48" y="74" text-anchor="end" fill="#fff" font-family="monospace" font-size="11">I0.4</text>
+                <text x="145" y="74" fill="#94a3b8" font-family="monospace" font-size="11">CU</text>
+
+                <line x1="55" y1="98" x2="135" y2="98" stroke="#ef4444" stroke-width="3"/>
+                <text x="48" y="102" text-anchor="end" fill="#fca5a5" font-family="monospace" font-size="11">I0.5</text>
+                <text x="145" y="102" fill="#ef4444" font-family="monospace" font-size="11" font-weight="bold">R (Reset)</text>
+
+                <line x1="55" y1="125" x2="135" y2="125" stroke="#f59e0b" stroke-width="3"/>
+                <text x="48" y="129" text-anchor="end" fill="#f59e0b" font-family="monospace" font-size="11">12</text>
+                <text x="145" y="129" fill="#94a3b8" font-family="monospace" font-size="11">PV</text>
+
+                <line x1="285" y1="70" x2="365" y2="70" stroke="#10b981" stroke-width="3"/>
+                <text x="275" y="74" text-anchor="end" fill="#94a3b8" font-family="monospace" font-size="11">Q</text>
+                <text x="372" y="74" fill="#10b981" font-family="monospace" font-size="11" font-weight="bold">Q0.4</text>
+                <text x="275" y="125" text-anchor="end" fill="#06b6d4" font-family="monospace" font-size="11">CV=12</text>
+              </svg>
+            `,
+            options: [
+              'CV continua incrementando (13) com Q mantida em 1, e somente um pulso na entrada R (Reset) zera CV e desliga Q.',
+              'O contador zera automaticamente sozinho na 12ª caixa sem precisar de sinal na entrada R.',
+              'A saída Q desliga imediatamente na 13ª caixa porque CV ultrapassou PV.',
+              'O CLP entra em modo STOP por estouro de memória ao passar de PV.'
+            ],
+            correctIndex: 0,
+            explanation: 'No contador crescente CTU (IEC 61131-3), a saída Q permanece em 1 sempre que CV >= PV. Mesmo que CV continue contando além de PV, Q só retorna a 0 e CV só volta a 0 quando a entrada R (Reset) receber nível lógico 1.'
+          }
+        ]
+      },
+      {
+        id: 'm3',
+        number: 3,
+        title: 'SENSORES INDUSTRIAIS',
+        subtitle: 'Detecção sem Contato, Materiais e Ligações PNP/NPN',
+        accent: 'amber',
+        iconSvg: `<svg class="w-8 h-8 text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="8" width="9" height="8" rx="1.5"/>
+          <path d="M15 9.5a4 4 0 010 5M18 7a7.5 7.5 0 010 10" stroke-linecap="round"/>
+        </svg>`,
+        challenges: [
+          {
+            id: 'm3_c1',
+            level: 'Fácil',
+            timeLimit: 35,
+            title: 'Detecção de Peças Metálicas em Ambiente Sujo',
+            context: 'Em uma linha de usinagem CNC com névoa de óleo refrigerante e cavacos não metálicos, precisamos detectar a chegada de blocos de aço e alumínio a 5 mm de distância sem contato mecânico e sem sofrer interferência da sujeira.',
+            objective: 'Escolha a tecnologia de sensor industrial mais robusta e seletiva para essa aplicação.',
+            svgHint: 'Campo Eletromagnético de Alta Frequência',
+            renderSvg: () => `
+              <svg viewBox="0 0 420 160" class="w-full h-auto">
+                <rect x="35" y="55" width="110" height="44" rx="6" fill="#1e293b" stroke="#f59e0b" stroke-width="2.5"/>
+                <rect x="145" y="60" width="16" height="34" rx="2" fill="#06b6d4"/>
+                <text x="90" y="81" text-anchor="middle" fill="#fff" font-family="monospace" font-size="11" font-weight="bold">SENSOR ?</text>
+                <path d="M168 62 Q186 77 168 92 M176 55 Q202 77 176 99" fill="none" stroke="#06b6d4" stroke-width="2.5"/>
+                <rect x="215" y="42" width="65" height="70" rx="6" fill="#64748b" stroke="#e2e8f0" stroke-width="2"/>
+                <text x="247" y="75" text-anchor="middle" fill="#fff" font-family="monospace" font-size="10" font-weight="bold">BLOCO</text>
+                <text x="247" y="89" text-anchor="middle" fill="#cbd5e1" font-family="monospace" font-size="9">AÇO / AL</text>
+                <text x="345" y="80" text-anchor="middle" fill="#10b981" font-family="monospace" font-size="11" font-weight="bold">Sn = 5mm</text>
+              </svg>
+            `,
+            options: [
+              'Sensor de Proximidade Indutivo — Detecta apenas metais via correntes parasitas e é imune à sujeira.',
+              'Sensor Óptico de Barreira — Ideal porque o óleo na lente melhora o feixe infravermelho.',
+              'Sensor de Proximidade Capacitivo — Detecta somente metais ferrosos e ignora líquidos.',
+              'Chave Fim de Curso Mecânica — Não possui desgaste mecânico e atua sem toque.'
+            ],
+            correctIndex: 0,
+            explanation: 'O Sensor Indutivo gera um campo eletromagnético oscilante. Somente materiais metálicos absorvem energia por correntes de Foucault, tornando-o imune a óleo, poeira, água e plásticos em ambientes industriais severos.'
+          },
+          {
+            id: 'm3_c2',
+            level: 'Médio',
+            timeLimit: 40,
+            title: 'Detecção Através de Parede Não Metálica e Garrafas PET',
+            context: 'Na fábrica de bebidas e alimentos, há dois pontos de controle: (1) detectar nível de açúcar dentro de um silo de PVC sem furar a parede e (2) contar garrafas plásticas PET transparentes na esteira.',
+            objective: 'Indique os sensores adequados para essas duas tarefas de detecção de materiais não metálicos.',
+            svgHint: 'Detecção Dielétrica & Óptica Polarizada',
+            renderSvg: () => `
+              <svg viewBox="0 0 420 160" class="w-full h-auto">
+                <!-- Silo PVC -->
+                <rect x="45" y="25" width="95" height="110" rx="8" fill="#111827" stroke="#38bdf8" stroke-width="2.5"/>
+                <rect x="49" y="65" width="87" height="66" rx="4" fill="#f59e0b" opacity="0.35"/>
+                <text x="92" y="102" text-anchor="middle" fill="#fde68a" font-family="monospace" font-size="10" font-weight="bold">GRÃOS/PÓ</text>
+                <rect x="144" y="62" width="55" height="24" rx="4" fill="#1e293b" stroke="#10b981" stroke-width="2"/>
+                <text x="171" y="78" text-anchor="middle" fill="#10b981" font-family="monospace" font-size="9" font-weight="bold">CAPAC.</text>
+
+                <!-- Garrafa PET -->
+                <rect x="260" y="45" width="42" height="75" rx="8" fill="#06b6d4" opacity="0.2" stroke="#38bdf8" stroke-width="2"/>
+                <text x="281" y="86" text-anchor="middle" fill="#bae6fd" font-family="monospace" font-size="9">PET</text>
+                <rect x="330" y="65" width="62" height="26" rx="4" fill="#1e293b" stroke="#f59e0b" stroke-width="2"/>
+                <text x="361" y="82" text-anchor="middle" fill="#f59e0b" font-family="monospace" font-size="9" font-weight="bold">ÓPTICO</text>
+                <line x1="235" y1="78" x2="330" y2="78" stroke="#ef4444" stroke-width="2" stroke-dasharray="4 2"/>
+              </svg>
+            `,
+            options: [
+              'Sensor Capacitivo (enxerga dielétricos através de paredes plásticas) e Fotoelétrico com filtro polarizado / retro-reflexivo.',
+              'Sensor Indutivo de face faceada para o silo e Sensor Magnético Reed-Switch para a garrafa PET.',
+              'Termopar Tipo J para o silo de açúcar e Encoder Incremental para contar as garrafas.',
+              'Sensor Indutivo de longo alcance para ambos os casos pois plástico conduz magnetismo.'
+            ],
+            correctIndex: 0,
+            explanation: 'Sensores Capacitivos respondem à variação da constante dielétrica do meio, detectando grãos e líquidos através de paredes de PVC/vidro. Já garrafas transparentes exigem sensores fotoelétricos específicos (como retro-reflexivo polarizado ou ultrassônico/capacitivo).'
+          },
+          {
+            id: 'm3_c3',
+            level: 'Difícil',
+            timeLimit: 45,
+            title: 'Ligação Elétrica a 3 Fios: Padrão PNP vs NPN no CLP',
+            context: 'Um CLP possui seu borne comum de entradas digitais (1M / COM) conectado ao 0Vcc da fonte (entrada tipo Sink, que precisa receber +24Vcc no borne I0.0 para reconhecer nível lógico 1). Você tem em mãos um sensor industrial a 3 fios (Marrom, Azul e Preto).',
+            objective: 'Selecione a topologia de saída do sensor e a codificação padrão IEC das cores dos fios.',
+            svgHint: 'Padrão IEC 60947-5-2 (3 Fios)',
+            renderSvg: () => `
+              <svg viewBox="0 0 420 160" class="w-full h-auto">
+                <rect x="25" y="30" width="120" height="100" rx="10" fill="#111827" stroke="#f59e0b" stroke-width="2"/>
+                <text x="85" y="84" text-anchor="middle" fill="#fff" font-family="monospace" font-size="12" font-weight="bold">SENSOR 3 FIOS</text>
+
+                <line x1="145" y1="50" x2="275" y2="50" stroke="#b45309" stroke-width="4"/>
+                <text x="210" y="43" text-anchor="middle" fill="#fbbf24" font-family="monospace" font-size="10">MARROM (+24Vcc)</text>
+
+                <line x1="145" y1="80" x2="275" y2="80" stroke="#94a3b8" stroke-width="4"/>
+                <text x="210" y="73" text-anchor="middle" fill="#e2e8f0" font-family="monospace" font-size="10">PRETO (SINAL ──▶ I0.0)</text>
+
+                <line x1="145" y1="110" x2="275" y2="110" stroke="#2563eb" stroke-width="4"/>
+                <text x="210" y="103" text-anchor="middle" fill="#60a5fa" font-family="monospace" font-size="10">AZUL (0Vcc)</text>
+
+                <rect x="275" y="30" width="120" height="100" rx="10" fill="#1e293b" stroke="#06b6d4" stroke-width="2"/>
+                <text x="335" y="65" text-anchor="middle" fill="#06b6d4" font-family="monospace" font-size="11" font-weight="bold">CLP SINK</text>
+                <text x="335" y="84" text-anchor="middle" fill="#fff" font-family="monospace" font-size="10">I0.0 (+24V)</text>
+                <text x="335" y="104" text-anchor="middle" fill="#94a3b8" font-family="monospace" font-size="10">COM = 0Vcc</text>
+              </svg>
+            `,
+            options: [
+              'Sensor PNP (chaveia +24Vcc no fio Preto); Marrom = +24Vcc, Azul = 0Vcc e Preto = Sinal para I0.0.',
+              'Sensor NPN (chaveia 0Vcc no fio Preto); Azul = +24Vcc, Marrom = 0Vcc e Preto = Sinal para I0.0.',
+              'Sensor PNP (chaveia 0Vcc no fio Azul); Preto = +24Vcc, Marrom = Sinal e Azul = 0Vcc.',
+              'Sensor NPN (chaveia +24Vcc no fio Marrom); Preto = +24Vcc, Azul = Sinal e Marrom = 0Vcc.'
+            ],
+            correctIndex: 0,
+            explanation: 'Pela norma IEC 60947-5-2, Marrom é +24Vcc, Azul é 0Vcc e Preto é o sinal. Como o CLP tem comum em 0Vcc, precisamos de um sensor PNP (chaveamento positivo), que envia +24Vcc no fio Preto ao detectar.'
+          }
+        ]
+      },
+      {
+        id: 'm4',
+        number: 4,
+        title: 'VARIÁVEIS FÍSICAS',
+        subtitle: 'Pressão, Temperatura e Padrão Analógico 4–20 mA',
+        accent: 'cyan',
+        iconSvg: `<svg class="w-8 h-8 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="8"/>
+          <path d="M12 12l3.5-3.5M8 16h8" stroke-linecap="round"/>
+        </svg>`,
+        challenges: [
+          {
+            id: 'm4_c1',
+            level: 'Fácil',
+            timeLimit: 35,
+            title: 'Conversão e Leitura de Pressão em Linha Pneumática',
+            context: 'O manômetro digital da unidade de conservação (Lubrefil) indica uma pressão de trabalho de 6,0 bar. O manual americano da válvula exige a verificação equivalente em PSI e kPa (considere 1 bar ≈ 14,5 PSI = 100 kPa).',
+            objective: 'Assinale a conversão correta de 6,0 bar para PSI e kPa.',
+            svgHint: '1 bar ≈ 14,5 PSI = 100 kPa',
+            renderSvg: () => `
+              <svg viewBox="0 0 420 160" class="w-full h-auto">
+                <circle cx="130" cy="80" r="62" fill="#111827" stroke="#06b6d4" stroke-width="4"/>
+                <text x="130" y="62" text-anchor="middle" fill="#94a3b8" font-family="monospace" font-size="10">MANÔMETRO</text>
+                <text x="130" y="92" text-anchor="middle" fill="#10b981" font-family="monospace" font-size="20" font-weight="bold">6.0 bar</text>
+                <line x1="130" y1="80" x2="165" y2="52" stroke="#f59e0b" stroke-width="3" stroke-linecap="round"/>
+
+                <rect x="225" y="30" width="165" height="100" rx="10" fill="#1e293b" stroke="#334155" stroke-width="2"/>
+                <text x="307" y="56" text-anchor="middle" fill="#06b6d4" font-family="monospace" font-size="11" font-weight="bold">EQUIVALÊNCIA SI/IMP</text>
+                <text x="307" y="82" text-anchor="middle" fill="#fff" font-family="monospace" font-size="13">? ? PSI</text>
+                <text x="307" y="106" text-anchor="middle" fill="#f59e0b" font-family="monospace" font-size="13">? ? kPa</text>
+              </svg>
+            `,
+            options: [
+              '87 PSI e 600 kPa (6,0 × 14,5 = 87 PSI; 6,0 × 100 = 600 kPa).',
+              '60 PSI e 60 kPa (6,0 × 10 = 60 PSI; 6,0 × 10 = 60 kPa).',
+              '145 PSI e 1000 kPa (equivalente a 10 bar na escala absoluta).',
+              '29 PSI e 200 kPa (equivalente a 2,0 bar de pressão relativa).'
+            ],
+            correctIndex: 0,
+            explanation: 'Na pneumática industrial, 1 bar equivale a 100 kPa (0,1 MPa) e aproximadamente 14,5 PSI. Multiplicando por 6,0 bar, obtemos 600 kPa e 87 PSI.'
+          },
+          {
+            id: 'm4_c2',
+            level: 'Médio',
+            timeLimit: 40,
+            title: 'Medição de Temperatura em Forno Industrial (850 °C)',
+            context: 'Um forno contínuo de tratamento térmico opera a 850 °C. Precisamos especificar um sensor de temperatura robusto para suportar essa faixa elevada, diferenciando o Termopar Tipo K da Termorresistência PT100.',
+            objective: 'Escolha a afirmativa tecnicamente correta sobre Termopar Tipo K e PT100.',
+            svgHint: 'Forno Térmico: 850 °C',
+            renderSvg: () => `
+              <svg viewBox="0 0 420 160" class="w-full h-auto">
+                <rect x="30" y="25" width="160" height="110" rx="12" fill="#450a0a" stroke="#ef4444" stroke-width="2.5"/>
+                <text x="110" y="65" text-anchor="middle" fill="#fca5a5" font-family="monospace" font-size="12" font-weight="bold">FORNO INDUSTRIAL</text>
+                <text x="110" y="95" text-anchor="middle" fill="#f59e0b" font-family="monospace" font-size="22" font-weight="bold">850 °C</text>
+
+                <line x1="175" y1="80" x2="255" y2="80" stroke="#cbd5e1" stroke-width="5" stroke-linecap="round"/>
+                <rect x="255" y="55" width="135" height="50" rx="8" fill="#111827" stroke="#06b6d4" stroke-width="2"/>
+                <text x="322" y="77" text-anchor="middle" fill="#06b6d4" font-family="monospace" font-size="11" font-weight="bold">SONDA TÉRMICA</text>
+                <text x="322" y="94" text-anchor="middle" fill="#fff" font-family="monospace" font-size="10">Termopar K vs PT100</text>
+              </svg>
+            `,
+            options: [
+              'Termopar Tipo K é o indicado (suporta até ~1260 °C gerando mV pelo efeito Seebeck); já o PT100 varia resistência de Platina e opera tipicamente até ~600 °C.',
+              'PT100 é o único indicado para 850 °C pois gera tensão em Volts e o Termopar Tipo K derrete acima de 100 °C.',
+              'Ambos são sensores capacitivos sem contato que medem radiação infravermelha à distância.',
+              'Termopar Tipo K possui resistência fixa de 100 Ω a 0 °C e não pode ser usado acima de 200 °C.'
+            ],
+            correctIndex: 0,
+            explanation: 'O Termopar Tipo K (Cromel-Alumel) baseia-se no efeito Seebeck (gera milivolts proporcionais à diferença de temperatura) e suporta até ~1260 °C. A termorresistência PT100 (Platina, 100 Ω a 0 °C) oferece altíssima precisão, mas em faixas menores (tipicamente -200 °C a 600 °C).'
+          },
+          {
+            id: 'm4_c3',
+            level: 'Difícil',
+            timeLimit: 45,
+            title: 'Sinal Padrão 4 a 20 mA: Escala de 50% e Fio Rompido',
+            context: 'Um transmissor de nível ultrassônico configurado para 0% a 100% envia sinal analógico padrão de 4 a 20 mA para o CLP. Durante a inspeção, o multímetro mediu 12,0 mA. Além disso, o engenheiro questionou o motivo de o zero da escala começar em 4 mA e não em 0 mA.',
+            objective: 'Identifique o nível correspondente a 12,0 mA e a vantagem do "Live Zero" (4 mA).',
+            svgHint: 'Loop Analógico 4–20 mA (Span = 16 mA)',
+            renderSvg: () => `
+              <svg viewBox="0 0 420 160" class="w-full h-auto">
+                <rect x="25" y="25" width="370" height="110" rx="12" fill="#111827" stroke="#334155" stroke-width="2"/>
+                <text x="210" y="48" text-anchor="middle" fill="#06b6d4" font-family="monospace" font-size="12" font-weight="bold">ESCALA LINEAR 4 – 20 mA (LIVE ZERO)</text>
+                
+                <line x1="55" y1="85" x2="365" y2="85" stroke="#475569" stroke-width="6" stroke-linecap="round"/>
+                <line x1="55" y1="85" x2="210" y2="85" stroke="#10b981" stroke-width="6" stroke-linecap="round"/>
+                
+                <circle cx="55" cy="85" r="6" fill="#ef4444"/><text x="55" y="108" text-anchor="middle" fill="#fca5a5" font-family="monospace" font-size="10">4mA (0%)</text>
+                <circle cx="210" cy="85" r="8" fill="#f59e0b"/><text x="210" y="112" text-anchor="middle" fill="#f59e0b" font-family="monospace" font-size="11" font-weight="bold">12mA (?%)</text>
+                <circle cx="365" cy="85" r="6" fill="#10b981"/><text x="365" y="108" text-anchor="middle" fill="#6ee7b7" font-family="monospace" font-size="10">20mA (100%)</text>
+              </svg>
+            `,
+            options: [
+              '50% do nível; e leituras abaixo de 4 mA (ex: 0 mA) permitem ao CLP diagnosticar fio rompido ou falha no transmissor.',
+              '60% do nível; e 4 mA serve apenas para economizar energia elétrica da fonte 24Vcc.',
+              '25% do nível; e fio rompido é indicado quando a corrente sobe para 20 mA.',
+              '50% do nível; porém sinais de corrente sofrem forte queda de tensão em cabos longos.'
+            ],
+            correctIndex: 0,
+            explanation: 'A faixa útil de 4 a 20 mA possui amplitude (Span) de 16 mA. Assim, 12 mA representa (12 - 4) / 16 = 8 / 16 = 50% da escala. O "Live Zero" (4 mA) diferencia claramente o tanque vazio (4 mA) de um cabo partido ou instrumento queimado (0 mA < 4 mA).'
+          }
+        ]
+      },
+      {
+        id: 'm5',
+        number: 5,
+        title: 'ATUADORES PNEUMÁTICOS',
+        subtitle: 'Cilindros, Válvulas Direcionais, Força e Fluxo',
+        accent: 'amber',
+        iconSvg: `<svg class="w-8 h-8 text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="7" width="11" height="10" rx="1"/>
+          <path d="M14 12h7M19 9v6M7 7V5M11 7V5" stroke-linecap="round"/>
+        </svg>`,
+        challenges: [
+          {
+            id: 'm5_c1',
+            level: 'Fácil',
+            timeLimit: 35,
+            title: 'Cilindros de Simples vs Dupla Ação e Válvulas Direcionais',
+            context: 'Na linha de montagem, a Estação A usa um cilindro expulsor com retorno interno por mola (1 conexão de ar). Já a Estação B usa um cilindro de prensa sem mola que exige ar comprimido tanto para avançar quanto para recuar (2 conexões de ar).',
+            objective: 'Associe corretamente cada tipo de cilindro à sua válvula direcional padrão.',
+            svgHint: '3/2 Vias vs 5/2 Vias',
+            renderSvg: () => `
+              <svg viewBox="0 0 420 160" class="w-full h-auto">
+                <!-- Simples Ação -->
+                <rect x="25" y="25" width="165" height="110" rx="10" fill="#111827" stroke="#06b6d4" stroke-width="2"/>
+                <text x="107" y="46" text-anchor="middle" fill="#06b6d4" font-family="monospace" font-size="10" font-weight="bold">SIMPLES AÇÃO (MOLA)</text>
+                <rect x="45" y="60" width="95" height="32" rx="3" fill="#1e293b" stroke="#64748b" stroke-width="2"/>
+                <polyline points="85,66 95,86 105,66 115,86 125,66 135,86" fill="none" stroke="#f59e0b" stroke-width="2"/>
+                <text x="107" y="116" text-anchor="middle" fill="#fff" font-family="monospace" font-size="11">Válvula: ?/2 Vias</text>
+
+                <!-- Dupla Ação -->
+                <rect x="225" y="25" width="170" height="110" rx="10" fill="#111827" stroke="#f59e0b" stroke-width="2"/>
+                <text x="310" y="46" text-anchor="middle" fill="#f59e0b" font-family="monospace" font-size="10" font-weight="bold">DUPLA AÇÃO (2 CÂMARAS)</text>
+                <rect x="245" y="60" width="105" height="32" rx="3" fill="#1e293b" stroke="#64748b" stroke-width="2"/>
+                <line x1="260" y1="92" x2="260" y2="104" stroke="#06b6d4" stroke-width="3"/>
+                <line x1="335" y1="92" x2="335" y2="104" stroke="#10b981" stroke-width="3"/>
+                <text x="310" y="118" text-anchor="middle" fill="#fff" font-family="monospace" font-size="11">Válvula: ?/2 Vias</text>
+              </svg>
+            `,
+            options: [
+              'Cilindro de Simples Ação → Válvula 3/2 vias; Cilindro de Dupla Ação → Válvula 5/2 vias.',
+              'Cilindro de Simples Ação → Válvula 5/2 vias; Cilindro de Dupla Ação → Válvula 2/2 vias.',
+              'Ambos utilizam exclusivamente válvulas 2/2 vias pois não necessitam de escape de ar.',
+              'Cilindro de Simples Ação → Válvula 4/3 vias; Cilindro de Dupla Ação → Válvula 3/2 vias.'
+            ],
+            correctIndex: 0,
+            explanation: 'Cilindros de simples ação possuem apenas 1 pórtico de ar e retornam por mola, exigindo válvula 3/2 vias (1 Pressão, 1 Utilização, 1 Escape). Cilindros de dupla ação possuem 2 câmaras independentes e são comandados por válvulas 5/2 vias (1 Pressão, 2 Utilizações, 2 Escapes).'
+          },
+          {
+            id: 'm5_c2',
+            level: 'Médio',
+            timeLimit: 40,
+            title: 'Cálculo de Força Teórica de Avanço (F = P × A)',
+            context: 'Um cilindro pneumático de dupla ação precisa prensar um rolamento. A pressão regulada na rede é P = 6 bar (equivalente a 60 N/cm²) e a área útil do êmbolo no avanço é A = 25 cm² (desconsidere o atrito interno).',
+            objective: 'Calcule a força teórica de avanço (F = P × A) desenvolvida pelo cilindro em Newtons (N).',
+            svgHint: 'F = P (N/cm²) × A (cm²)',
+            renderSvg: () => `
+              <svg viewBox="0 0 420 160" class="w-full h-auto">
+                <rect x="35" y="42" width="180" height="76" rx="6" fill="#1e293b" stroke="#64748b" stroke-width="3"/>
+                <rect x="38" y="45" width="75" height="70" fill="#06b6d4" opacity="0.35"/>
+                <text x="75" y="84" text-anchor="middle" fill="#fff" font-family="monospace" font-size="11" font-weight="bold">P = 6 bar</text>
+                <rect x="113" y="45" width="14" height="70" fill="#f59e0b"/>
+                <rect x="127" y="72" width="140" height="16" fill="#cbd5e1"/>
+                <text x="145" y="32" fill="#06b6d4" font-family="monospace" font-size="11">Área Êmbolo A = 25 cm²</text>
+                <path d="M280 80 L335 80 M325 72 L335 80 L325 88" fill="none" stroke="#10b981" stroke-width="4" stroke-linecap="round"/>
+                <text x="372" y="84" text-anchor="middle" fill="#10b981" font-family="monospace" font-size="14" font-weight="bold">F = ? N</text>
+              </svg>
+            `,
+            options: [
+              '1.500 N  (60 N/cm² × 25 cm² = 1.500 N).',
+              '150 N  (6 bar × 25 cm² = 150 N).',
+              '2.500 N  (100 N/cm² × 25 cm² = 2.500 N).',
+              '600 N  (60 N/cm² × 10 cm² = 600 N).'
+            ],
+            correctIndex: 0,
+            explanation: 'Pela equação fundamental da potência fluida, F = P × A. Como 1 bar = 10 N/cm², 6 bar correspondem a 60 N/cm². Multiplicando pela área A = 25 cm², temos F = 60 × 25 = 1.500 N (aproximadamente 150 kgf).'
+          },
+          {
+            id: 'm5_c3',
+            level: 'Difícil',
+            timeLimit: 45,
+            title: 'Controle de Velocidade com Reguladora de Fluxo Unidirecional',
+            context: 'O cilindro transferidor de peças frágeis está avançando rápido demais e quebrando os componentes no fim de curso. O técnico precisa reduzir suavemente a velocidade de avanço mantendo a força final de prensagem intacta.',
+            objective: 'Qual dispositivo e método de instalação resolvem o problema corretamente?',
+            svgHint: 'Estrangulamento na Exaustão (Meter-Out)',
+            renderSvg: () => `
+              <svg viewBox="0 0 420 160" class="w-full h-auto">
+                <rect x="65" y="30" width="190" height="60" rx="6" fill="#1e293b" stroke="#64748b" stroke-width="2.5"/>
+                <rect x="125" y="33" width="12" height="54" fill="#cbd5e1"/>
+                <rect x="137" y="54" width="150" height="12" fill="#e2e8f0"/>
+                
+                <!-- Linha de Ar Admissão -->
+                <line x1="85" y1="90" x2="85" y2="135" stroke="#06b6d4" stroke-width="3"/>
+                <text x="65" y="125" text-anchor="end" fill="#06b6d4" font-family="monospace" font-size="10">AR ENTRA</text>
+
+                <!-- Linha de Exaustão com Reguladora -->
+                <line x1="235" y1="90" x2="235" y2="135" stroke="#f59e0b" stroke-width="3"/>
+                <rect x="215" y="102" width="40" height="24" rx="5" fill="#111827" stroke="#10b981" stroke-width="2"/>
+                <text x="235" y="118" text-anchor="middle" fill="#10b981" font-family="monospace" font-size="9" font-weight="bold">FLUXO</text>
+                <text x="265" y="118" fill="#f59e0b" font-family="monospace" font-size="10">EXAUSTÃO (METER-OUT)</text>
+              </svg>
+            `,
+            options: [
+              'Válvula Reguladora de Fluxo Unidirecional estrangulando o ar na exaustão (Meter-Out) da câmara oposta.',
+              'Reduzir a pressão geral no Lubrefil de 6 bar para 1 bar até o cilindro ficar lento.',
+              'Instalar uma Válvula de Escape Rápido na saída do cilindro para acelerar a exaustão.',
+              'Substituir o cilindro de dupla ação por uma válvula alternadora (Elemento OU).'
+            ],
+            correctIndex: 0,
+            explanation: 'A Válvula Reguladora de Fluxo Unidirecional possui um estrangulamento ajustável em paralelo com uma retenção. Instalada na exaustão (Meter-Out), ela cria contrapressão controlada que estabiliza a velocidade sem reduzir a pressão final (força) quando o êmbolo para.'
+          }
+        ]
+      },
+      {
+        id: 'm6',
+        number: 6,
+        title: 'MOTORES ELÉTRICOS',
+        subtitle: 'Fechamento Estrela-Triângulo, Inversor e Proteção',
+        accent: 'emerald',
+        iconSvg: `<svg class="w-8 h-8 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="7"/>
+          <path d="M9.5 14.5V9.5L12 12.5l2.5-3v5M3 12h2M19 12h2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>`,
+        challenges: [
+          {
+            id: 'm6_c1',
+            level: 'Fácil',
+            timeLimit: 35,
+            title: 'Fechamento Estrela (Y) vs Triângulo (Δ) no MIT 6 Pontas',
+            context: 'Um Motor de Indução Trifásico (MIT) de 6 terminais possui placa nominal 220V / 380V. Ele será instalado em um quadro industrial alimentado por rede trifásica de 380V (maior tensão nominal da placa).',
+            objective: 'Qual fechamento deve ser feito na caixa de ligação (U1, V1, W1 / W2, U2, V2) para não queimar as bobinas?',
+            svgHint: 'Clique para alternar Estrela (Y) / Triângulo (Δ)',
+            renderSvg: (state) => {
+              const mode = state.mode ?? 'Y';
+              return `
+                <svg viewBox="0 0 420 165" class="w-full h-auto select-none">
+                  <rect x="45" y="20" width="180" height="125" rx="12" fill="#111827" stroke="#475569" stroke-width="2.5"/>
+                  <text x="135" y="38" text-anchor="middle" fill="#94a3b8" font-family="monospace" font-size="10">CAIXA DE LIGAÇÃO (${mode === 'Y' ? 'ESTRELA Y' : 'TRIÂNGULO Δ'})</text>
+
+                  ${mode === 'Δ' ? `
+                    <rect x="76" y="58" width="14" height="58" rx="3" fill="#f59e0b"/>
+                    <rect x="128" y="58" width="14" height="58" rx="3" fill="#f59e0b"/>
+                    <rect x="180" y="58" width="14" height="58" rx="3" fill="#f59e0b"/>
+                  ` : `
+                    <rect x="83" y="109" width="104" height="14" rx="3" fill="#10b981"/>
+                  `}
+
+                  <circle cx="83" cy="58" r="11" fill="#cbd5e1"/><text x="83" y="62" text-anchor="middle" fill="#0f172a" font-family="monospace" font-size="10" font-weight="bold">U1</text>
+                  <circle cx="135" cy="58" r="11" fill="#cbd5e1"/><text x="135" y="62" text-anchor="middle" fill="#0f172a" font-family="monospace" font-size="10" font-weight="bold">V1</text>
+                  <circle cx="187" cy="58" r="11" fill="#cbd5e1"/><text x="187" y="62" text-anchor="middle" fill="#0f172a" font-family="monospace" font-size="10" font-weight="bold">W1</text>
+
+                  <circle cx="83" cy="116" r="11" fill="#cbd5e1"/><text x="83" y="120" text-anchor="middle" fill="#0f172a" font-family="monospace" font-size="10" font-weight="bold">W2</text>
+                  <circle cx="135" cy="116" r="11" fill="#cbd5e1"/><text x="135" y="120" text-anchor="middle" fill="#0f172a" font-family="monospace" font-size="10" font-weight="bold">U2</text>
+                  <circle cx="187" cy="116" r="11" fill="#cbd5e1"/><text x="187" y="120" text-anchor="middle" fill="#0f172a" font-family="monospace" font-size="10" font-weight="bold">V2</text>
+
+                  <g onclick="App.setSvgState('mode', '${mode === 'Y' ? 'Δ' : 'Y'}')" class="cursor-pointer">
+                    <rect x="255" y="45" width="135" height="75" rx="10" fill="#1e293b" stroke="#06b6d4" stroke-width="2"/>
+                    <text x="322" y="75" text-anchor="middle" fill="#06b6d4" font-family="monospace" font-size="11" font-weight="bold">REDE: 380V</text>
+                    <text x="322" y="96" text-anchor="middle" fill="#fff" font-family="monospace" font-size="10">[Alternar Diagrama]</text>
+                  </g>
+                </svg>
+              `;
+            },
+            options: [
+              'Fechamento em Estrela (Y) — Curto-circuita W2-U2-V2 (ponto neutro), dividindo 380V por √3 e aplicando 220V em cada bobina.',
+              'Fechamento em Triângulo (Δ) — Liga U1-W2, V1-U2 e W1-V2 para aplicar 380V diretos em cada bobina de 220V.',
+              'Fechamento em Estrela (Y) é usado exclusivamente para a menor tensão (220V) pois aumenta a corrente de partida.',
+              'Não é possível ligar um motor 220V/380V em rede trifásica de 380V sem transformador.'
+            ],
+            correctIndex: 0,
+            explanation: 'Em um motor 220V/380V, cada bobina suporta 220V. Quando a rede é de 380V (maior tensão), fechamos em Estrela (Y): a tensão de linha (380V) é dividida por √3 (1,732), resultando em exatos 220V seguros sobre cada fase do motor.'
+          },
+          {
+            id: 'm6_c2',
+            level: 'Médio',
+            timeLimit: 40,
+            title: 'Controle de Velocidade e Rampa via Inversor de Frequência',
+            context: 'Uma esteira transportadora acionada por motor trifásico de 4 polos (60 Hz → rotação síncrona 1800 RPM) precisa reduzir sua velocidade pela metade (900 RPM) com rampa suave de desaceleração e manutenção de torque.',
+            objective: 'Como o Inversor de Frequência realiza esse controle de velocidade?',
+            svgHint: 'n = (120 × f) / p',
+            renderSvg: () => `
+              <svg viewBox="0 0 420 160" class="w-full h-auto">
+                <rect x="35" y="30" width="120" height="100" rx="10" fill="#111827" stroke="#06b6d4" stroke-width="2.5"/>
+                <text x="95" y="55" text-anchor="middle" fill="#06b6d4" font-family="monospace" font-size="11" font-weight="bold">INVERSOR V/f</text>
+                <rect x="52" y="65" width="86" height="34" rx="5" fill="#0b0f19" stroke="#334155"/>
+                <text x="95" y="87" text-anchor="middle" fill="#10b981" font-family="monospace" font-size="15" font-weight="bold">30.0 Hz</text>
+
+                <line x1="155" y1="65" x2="255" y2="65" stroke="#ef4444" stroke-width="3" class="wire-live"/>
+                <line x1="155" y1="80" x2="255" y2="80" stroke="#f59e0b" stroke-width="3" class="wire-live"/>
+                <line x1="155" y1="95" x2="255" y2="95" stroke="#06b6d4" stroke-width="3" class="wire-live"/>
+
+                <circle cx="315" cy="80" r="46" fill="#1e293b" stroke="#10b981" stroke-width="3"/>
+                <g class="spin-motor">
+                  <line x1="315" y1="45" x2="315" y2="115" stroke="#10b981" stroke-width="3"/>
+                  <line x1="280" y1="80" x2="350" y2="80" stroke="#10b981" stroke-width="3"/>
+                </g>
+                <circle cx="315" cy="80" r="14" fill="#111827"/>
+                <text x="315" y="84" text-anchor="middle" fill="#fff" font-family="monospace" font-size="10" font-weight="bold">M 3~</text>
+              </svg>
+            `,
+            options: [
+              'Variando a frequência de saída para 30 Hz e ajustando proporcionalmente a tensão (controle V/f) para manter o fluxo magnético e torque.',
+              'Reduzindo apenas a tensão de alimentação com resistores em série mantendo a frequência fixa em 60 Hz.',
+              'Desligando uma das três fases do motor para que ele opere com metade da potência.',
+              'Alterando fisicamente o número de polos do estator de 4 para 8 polos com contatores.'
+            ],
+            correctIndex: 0,
+            explanation: 'Pela fórmula n = (120 × f) / p, a velocidade síncrona é diretamente proporcional à frequência (f). Para cair de 1800 RPM (60 Hz) para 900 RPM, o inversor reduz f para 30 Hz e reduz a tensão na mesma proporção (relação V/f constante) para evitar saturação e manter o torque.'
+          },
+          {
+            id: 'm6_c3',
+            level: 'Difícil',
+            timeLimit: 45,
+            title: 'Proteção Térmica e Inversão do Sentido de Giro',
+            context: 'Durante o comissionamento de uma bomba centrífuga trifásica, o técnico percebeu que o rotor está girando no sentido horário (inverso ao indicado pela seta da carcaça). Além disso, é preciso garantir proteção contra sobrecarga mecânica prolongada.',
+            objective: 'Qual procedimento inverte o sentido de rotação do motor trifásico e qual dispositivo protege contra sobrecarga?',
+            svgHint: 'Sequência de Fases L1-L2-L3 & Proteção',
+            renderSvg: () => `
+              <svg viewBox="0 0 420 160" class="w-full h-auto">
+                <rect x="30" y="30" width="150" height="100" rx="10" fill="#111827" stroke="#f59e0b" stroke-width="2"/>
+                <text x="105" y="55" text-anchor="middle" fill="#f59e0b" font-family="monospace" font-size="11" font-weight="bold">DISJUNTOR-MOTOR</text>
+                <text x="105" y="78" text-anchor="middle" fill="#cbd5e1" font-family="monospace" font-size="10">Curto (Magnético)</text>
+                <text x="105" y="96" text-anchor="middle" fill="#10b981" font-family="monospace" font-size="10">Sobrecarga (Térmico)</text>
+
+                <line x1="180" y1="60" x2="275" y2="95" stroke="#ef4444" stroke-width="3"/>
+                <line x1="180" y1="95" x2="275" y2="60" stroke="#06b6d4" stroke-width="3"/>
+                <line x1="180" y1="112" x2="275" y2="112" stroke="#f59e0b" stroke-width="3"/>
+
+                <circle cx="330" cy="85" r="42" fill="#1e293b" stroke="#06b6d4" stroke-width="2.5"/>
+                <text x="330" y="82" text-anchor="middle" fill="#fff" font-family="monospace" font-size="12" font-weight="bold">MIT 3~</text>
+                <text x="330" y="98" text-anchor="middle" fill="#10b981" font-family="monospace" font-size="10">↺ INVERSÃO</text>
+              </svg>
+            `,
+            options: [
+              'Inverter quaisquer duas das três fases de alimentação (ex: trocar L1 com L2); e utilizar Relé Térmico ou Disjuntor-Motor ajustado na corrente nominal (In).',
+              'Inverter as três fases simultaneamente (L1→L2→L3→L1); e utilizar apenas um fusível ultrarrápido para sobrecarga lenta.',
+              'Inverter o cabo de aterramento (PE) com o neutro (N); e utilizar um sensor indutivo como proteção térmica.',
+              'Fechar o motor em Triângulo; pois motores fechados em Estrela giram apenas no sentido horário.'
+            ],
+            correctIndex: 0,
+            explanation: 'Inverter duas fases quaisquer inverte a sequência de fases do campo girante no estator, revertendo o sentido de rotação do motor trifásico. Já o Relé Térmico (ou Disjuntor-Motor) atua por lâminas bimetálicas ajustadas na corrente nominal (In) para desligar o comando em caso de sobrecarga.'
+          }
+        ]
+      }
+    ];
+
+    /**
+     * 4. ALUNOS FICTÍCIOS INICIAIS PARA O RANKING DA TURMA
+     */
+    const DEFAULT_BOTS = [
+      { id: 'bot_1', name: 'Mariana Silva', turma: '2º Ano A - Manhã', avatarId: 1, xp: 2040, completedIds: ['m1_c1','m1_c2','m1_c3','m2_c1','m2_c2','m2_c3','m3_c1','m3_c2','m3_c3','m4_c1','m4_c2','m5_c1','m5_c2','m6_c1','m6_c2'], attempts: 16, correctCount: 15, isBot: true },
+      { id: 'bot_2', name: 'Gabriel Oliveira', turma: '2º Ano B - Tarde', avatarId: 2, xp: 1750, completedIds: ['m1_c1','m1_c2','m1_c3','m2_c1','m2_c2','m3_c1','m3_c2','m4_c1','m4_c2','m5_c1','m5_c2','m6_c1','m6_c2'], attempts: 15, correctCount: 13, isBot: true },
+      { id: 'bot_3', name: 'Rafael Costa', turma: '2º Ano A - Manhã', avatarId: 0, xp: 1480, completedIds: ['m1_c1','m1_c2','m1_c3','m2_c1','m2_c2','m3_c1','m3_c2','m4_c1','m5_c1','m5_c2','m6_c1'], attempts: 13, correctCount: 11, isBot: true },
+      { id: 'bot_4', name: 'Beatriz Santos', turma: '2º Ano C - Noite', avatarId: 6, xp: 1210, completedIds: ['m1_c1','m1_c2','m2_c1','m2_c2','m3_c1','m3_c2','m3_c3','m4_c1','m5_c1'], attempts: 11, correctCount: 9, isBot: true },
+      { id: 'bot_5', name: 'Thiago Almeida', turma: 'Técnico Subsequente', avatarId: 4, xp: 940, completedIds: ['m1_c1','m1_c2','m2_c1','m3_c1','m4_c1','m5_c1','m6_c1'], attempts: 9, correctCount: 7, isBot: true },
+      { id: 'bot_6', name: 'Camila Ferreira', turma: '2º Ano B - Tarde', avatarId: 3, xp: 660, completedIds: ['m1_c1','m2_c1','m3_c1','m4_c1','m5_c1'], attempts: 7, correctCount: 5, isBot: true }
+    ];
+
+    /**
+     * 5. GERENCIADOR DE ESTADO GLOBAL E PERSISTÊNCIA MULTI-USUÁRIO
+     */
+    const Store = {
+      STORAGE_KEY: 'autotech_arena_v2',
+      currentUserId: 'user_default',
+      users: [],
+
+      load() {
+        try {
+          const raw = localStorage.getItem(this.STORAGE_KEY);
+          if (raw) {
+            const data = JSON.parse(raw);
+            if (Array.isArray(data.users) && data.users.length > 0) {
+              this.users = data.users;
+              this.currentUserId = data.currentUserId || this.users[0].id;
+              return;
+            }
+          }
+        } catch (e) {
+          console.warn('Erro ao carregar localStorage:', e);
+        }
+        // Inicialização padrão com o operador atual + 6 alunos fictícios
+        const initialUser = {
+          id: 'user_default',
+          name: 'Operador(a) Técnico',
+          turma: '2º Ano A - Manhã',
+          avatarId: 0,
+          xp: 0,
+          completedIds: [],
+          attempts: 0,
+          correctCount: 0,
+          isBot: false
+        };
+        this.users = [initialUser, ...JSON.parse(JSON.stringify(DEFAULT_BOTS))];
+        this.currentUserId = initialUser.id;
+        this.save();
+      },
+
+      save() {
+        try {
+          localStorage.setItem(this.STORAGE_KEY, JSON.stringify({
+            currentUserId: this.currentUserId,
+            users: this.users
+          }));
+        } catch (e) {
+          console.warn('Erro ao salvar localStorage:', e);
+        }
+      },
+
+      getCurrentUser() {
+        let u = this.users.find(x => x.id === this.currentUserId);
+        if (!u) {
+          u = this.users.find(x => !x.isBot) || this.users[0];
+          this.currentUserId = u.id;
+        }
+        return u;
+      },
+
+      getPatente(xp) {
+        if (xp >= 2100) return 'Mestre Indústria 4.0';
+        if (xp >= 1400) return 'Técnico Sênior';
+        if (xp >= 700) return 'Operador Pleno';
+        return 'Aprendiz';
+      },
+
+      getSortedRanking() {
+        return [...this.users].sort((a, b) => {
+          if (b.xp !== a.xp) return b.xp - a.xp;
+          return b.completedIds.length - a.completedIds.length;
+        });
+      }
+    };
+
+    /**
+     * 6. CONTROLADOR PRINCIPAL DA INTERFACE (ABAS, CADASTRO, DESAFIOS E RANKING)
+     */
+    const App = {
+      activeTab: 'modules',
+      selectedAvatarId: 0,
+      isNewOperatorMode: false,
+
+      // Estado do desafio ativo
+      modIdx: 0,
+      chIdx: 0,
+      timerHandle: null,
+      timeLeft: 35,
+      timeTotal: 35,
+      answered: false,
+      svgState: {},
+
+      init() {
+        Store.load();
+        const user = Store.getCurrentUser();
+        this.selectedAvatarId = user.avatarId;
+        this.syncHeader();
+        this.renderModulesView();
+      },
+
+      toggleAudio() {
+        AudioFX.enabled = !AudioFX.enabled;
+        if (AudioFX.enabled) AudioFX.click();
+        document.getElementById('icon-audio-on').classList.toggle('hidden', !AudioFX.enabled);
+        document.getElementById('icon-audio-off').classList.toggle('hidden', AudioFX.enabled);
+      },
+
+      syncHeader() {
+        const user = Store.getCurrentUser();
+        document.getElementById('header-user-name').textContent = user.name;
+        document.getElementById('header-user-turma').textContent = user.turma;
+        document.getElementById('header-xp').textContent = user.xp;
+        document.getElementById('header-avatar-box').innerHTML = AVATARS[user.avatarId]?.svg || AVATARS[0].svg;
+      },
+
+      switchTab(tab) {
+        AudioFX.click();
+        this.stopTimer();
+        this.activeTab = tab;
+
+        // Esconde todas as views
+        ['view-modules', 'view-register', 'view-ranking', 'view-challenge'].forEach(id => {
+          document.getElementById(id).classList.add('hidden');
+        });
+
+        // Estiliza os 3 botões de navegação
+        const tabs = ['modules', 'register', 'ranking'];
+        tabs.forEach(t => {
+          const btn = document.getElementById(`tab-btn-${t}`);
+          if (t === tab) {
+            btn.className = 'py-2.5 px-2 sm:px-4 rounded-xl font-display font-bold text-xs sm:text-sm tracking-wide flex items-center justify-center gap-2 border transition-all bg-cyan-500/15 text-cyan-300 border-cyan-500/50 shadow-inner';
+          } else {
+            btn.className = 'py-2.5 px-2 sm:px-4 rounded-xl font-display font-bold text-xs sm:text-sm tracking-wide flex items-center justify-center gap-2 border transition-all bg-slate-900/80 text-slate-400 border-slate-800 hover:text-white hover:border-slate-600';
+          }
+        });
+
+        if (tab === 'modules') {
+          this.renderModulesView();
+          document.getElementById('view-modules').classList.remove('hidden');
+        } else if (tab === 'register') {
+          this.renderRegisterView();
+          document.getElementById('view-register').classList.remove('hidden');
+        } else if (tab === 'ranking') {
+          this.renderRankingView();
+          document.getElementById('view-ranking').classList.remove('hidden');
+        }
+
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      },
+
+      // ===================================================================
+      // RENDERIZAÇÃO ABA 1: 🏭 PAINEL DE MÓDULOS
+      // ===================================================================
+      renderModulesView() {
+        const user = Store.getCurrentUser();
+        const doneCount = user.completedIds.length;
+        const acc = user.attempts > 0 ? Math.round((user.correctCount / user.attempts) * 100) : 0;
+        const ranking = Store.getSortedRanking();
+        const pos = ranking.findIndex(u => u.id === user.id) + 1;
+
+        document.getElementById('dash-welcome-name').textContent = user.name;
+        document.getElementById('dash-rank-badge').textContent = `PATENTE: ${Store.getPatente(user.xp).toUpperCase()}`;
+        document.getElementById('dash-progress-text').textContent = `${doneCount}/18`;
+        document.getElementById('dash-kpi-done').textContent = `${doneCount}/18`;
+        document.getElementById('dash-kpi-acc').textContent = `${acc}%`;
+        document.getElementById('dash-kpi-pos').textContent = `#${pos}`;
+
+        const grid = document.getElementById('modules-grid');
+        grid.innerHTML = MODULES.map((mod, idx) => {
+          const modDone = mod.challenges.filter(c => user.completedIds.includes(c.id)).length;
+          const isComplete = modDone === 3;
+
+          return `
+            <div class="ihm-panel rounded-2xl p-5 flex flex-col justify-between gap-4 hover:border-cyan-500/60 transition-all group">
+              <div class="space-y-3">
+                <div class="flex items-start justify-between gap-3">
+                  <div class="w-12 h-12 rounded-xl bg-slate-900 border border-slate-700 flex items-center justify-center group-hover:scale-105 transition-transform">
+                    ${mod.iconSvg}
+                  </div>
+                  <span class="inline-flex items-center gap-1.5 text-[11px] font-mono px-2.5 py-1 rounded-full ${isComplete ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/40' : 'bg-slate-900 text-slate-400 border border-slate-700'}">
+                    <span class="w-2 h-2 rounded-full ${isComplete ? 'bg-emerald-400 led-green' : (modDone > 0 ? 'bg-amber-400 led-amber' : 'bg-slate-600')}"></span>
+                    ${isComplete ? 'CONCLUÍDO' : `${modDone}/3 MISSÕES`}
+                  </span>
+                </div>
+
+                <div>
+                  <div class="text-[11px] font-mono uppercase text-cyan-400">MÓDULO 0${mod.number}</div>
+                  <h3 class="font-display text-lg font-bold text-white mt-0.5">${mod.title}</h3>
+                  <p class="text-xs text-slate-400 mt-1">${mod.subtitle}</p>
+                </div>
+
+                <!-- Lista rápida das 3 missões -->
+                <div class="space-y-1.5 pt-1">
+                  ${mod.challenges.map((ch, cIdx) => {
+                    const done = user.completedIds.includes(ch.id);
+                    return `
+                      <button onclick="App.startChallenge(${idx}, ${cIdx})" class="w-full px-3 py-2 rounded-lg bg-slate-900/90 hover:bg-slate-800 border border-slate-800 hover:border-cyan-500/40 flex items-center justify-between text-left transition-all">
+                        <span class="text-xs text-slate-300 truncate pr-2">
+                          <strong class="font-mono text-amber-400 mr-1">${cIdx + 1}.</strong> ${ch.title}
+                        </span>
+                        <span class="text-[10px] font-mono shrink-0 ${done ? 'text-emerald-400 font-bold' : 'text-slate-500'}">
+                          ${done ? '✓ OK' : `${ch.timeLimit}s`}
+                        </span>
+                      </button>
+                    `;
+                  }).join('')}
+                </div>
+              </div>
+
+              <button onclick="App.startModule(${idx})" class="w-full py-3 rounded-xl bg-slate-800 hover:bg-cyan-500 text-cyan-300 hover:text-slate-950 border border-slate-600 hover:border-cyan-400 font-display font-bold text-sm tracking-wide transition-all">
+                ${modDone > 0 && !isComplete ? 'Continuar Módulo →' : 'Iniciar Módulo →'}
+              </button>
+            </div>
+          `;
+        }).join('');
+      },
+
+      // ===================================================================
+      // RENDERIZAÇÃO ABA 2: 👷 CADASTRO DE OPERADOR
+      // ===================================================================
+      renderRegisterView() {
+        const user = Store.getCurrentUser();
+        this.isNewOperatorMode = false;
+        this.selectedAvatarId = user.avatarId;
+
+        document.getElementById('register-feedback').classList.add('hidden');
+        document.getElementById('reg-name-input').value = user.name;
+        document.getElementById('reg-turma-select').value = user.turma;
+
+        this.renderAvatarGrid();
+        this.updateRegisterPreview();
+        this.renderLocalProfiles();
+      },
+
+      renderAvatarGrid() {
+        const grid = document.getElementById('avatar-selector-grid');
+        grid.innerHTML = AVATARS.map(av => {
+          const isSel = this.selectedAvatarId === av.id;
+          return `
+            <button type="button" onclick="App.selectAvatar(${av.id})" class="p-2.5 rounded-xl border text-center transition-all flex flex-col items-center gap-1.5 ${isSel ? 'bg-cyan-500/15 border-cyan-400 shadow-lg shadow-cyan-500/15 scale-[1.02]' : 'bg-slate-900/90 border-slate-700 hover:border-slate-500'}">
+              <div class="w-14 h-14 rounded-xl overflow-hidden border border-slate-700">
+                ${av.svg}
+              </div>
+              <div class="leading-tight">
+                <div class="text-[11px] font-bold ${isSel ? 'text-cyan-300' : 'text-white'}">${av.name}</div>
+                <div class="text-[9px] font-mono text-slate-400">${av.role}</div>
+              </div>
+            </button>
+          `;
+        }).join('');
+      },
+
+      selectAvatar(id) {
+        AudioFX.click();
+        this.selectedAvatarId = id;
+        this.renderAvatarGrid();
+        this.updateRegisterPreview();
+      },
+
+      updateRegisterPreview() {
+        const nameVal = document.getElementById('reg-name-input').value.trim() || 'Novo(a) Operador(a)';
+        const turmaVal = document.getElementById('reg-turma-select').value;
+        const user = this.isNewOperatorMode ? { xp: 0, completedIds: [] } : Store.getCurrentUser();
+
+        document.getElementById('reg-preview-avatar').innerHTML = AVATARS[this.selectedAvatarId]?.svg || AVATARS[0].svg;
+        document.getElementById('reg-preview-name').textContent = nameVal;
+        document.getElementById('reg-preview-turma').textContent = turmaVal;
+        document.getElementById('reg-preview-rank').textContent = Store.getPatente(user.xp);
+        document.getElementById('reg-preview-xp').textContent = `${user.xp} XP`;
+        document.getElementById('reg-preview-done').textContent = `${user.completedIds.length}/18`;
+      },
+
+      prepareNewOperator() {
+        AudioFX.click();
+        this.isNewOperatorMode = true;
+        this.selectedAvatarId = Math.floor(Math.random() * AVATARS.length);
+        document.getElementById('register-feedback').classList.add('hidden');
+        document.getElementById('reg-name-input').value = '';
+        document.getElementById('reg-name-input').focus();
+        this.renderAvatarGrid();
+        this.updateRegisterPreview();
+      },
+
+      saveOperatorProfile() {
+        const rawName = document.getElementById('reg-name-input').value.trim();
+        const name = rawName || 'Operador(a) Técnico';
+        const turma = document.getElementById('reg-turma-select').value;
+
+        if (this.isNewOperatorMode) {
+          const newUser = {
+            id: 'student_' + Date.now(),
+            name,
+            turma,
+            avatarId: this.selectedAvatarId,
+            xp: 0,
+            completedIds: [],
+            attempts: 0,
+            correctCount: 0,
+            isBot: false
+          };
+          Store.users.push(newUser);
+          Store.currentUserId = newUser.id;
+          this.isNewOperatorMode = false;
+        } else {
+          const user = Store.getCurrentUser();
+          user.name = name;
+          user.turma = turma;
+          user.avatarId = this.selectedAvatarId;
+        }
+
+        Store.save();
+        AudioFX.success();
+        this.syncHeader();
+        this.updateRegisterPreview();
+        this.renderLocalProfiles();
+
+        const fb = document.getElementById('register-feedback');
+        document.getElementById('register-feedback-text').textContent = `✓ Credencial de "${name}" (${turma}) salva e registrada no Ranking!`;
+        fb.classList.remove('hidden');
+      },
+
+      renderLocalProfiles() {
+        const localStudents = Store.users.filter(u => !u.isBot);
+        const list = document.getElementById('local-profiles-list');
+        list.innerHTML = localStudents.map(st => {
+          const active = st.id === Store.currentUserId && !this.isNewOperatorMode;
+          return `
+            <button onclick="App.switchLocalStudent('${st.id}')" class="flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-mono transition-all ${active ? 'bg-cyan-500/20 border-cyan-400 text-cyan-200 font-bold' : 'bg-slate-900 border-slate-700 text-slate-300 hover:border-slate-500'}">
+              <span class="w-5 h-5 rounded overflow-hidden inline-block">${AVATARS[st.avatarId]?.svg || AVATARS[0].svg}</span>
+              <span>${st.name} (${st.xp} XP)</span>
+            </button>
+          `;
+        }).join('');
+      },
+
+      switchLocalStudent(id) {
+        AudioFX.click();
+        Store.currentUserId = id;
+        Store.save();
+        this.syncHeader();
+        this.renderRegisterView();
+      },
+
+      // ===================================================================
+      // RENDERIZAÇÃO ABA 3: 🏆 RANKING DA TURMA
+      // ===================================================================
+      renderRankingView() {
+        const currentUser = Store.getCurrentUser();
+        const ranked = Store.getSortedRanking();
+
+        // Pódio Top 3 (Exibido na ordem visual: 2º Prata | 1º Ouro | 3º Bronze)
+        const top3 = [
+          { user: ranked[1], pos: 2, medal: '🥈 PRATA', border: 'border-slate-400', bg: 'from-slate-800/90 to-slate-900', height: 'md:pb-6', badgeColor: 'text-slate-300' },
+          { user: ranked[0], pos: 1, medal: '🥇 OURO', border: 'border-amber-400', bg: 'from-amber-950/50 to-slate-900', height: 'md:pb-12', badgeColor: 'text-amber-400' },
+          { user: ranked[2], pos: 3, medal: '🥉 BRONZE', border: 'border-amber-700', bg: 'from-orange-950/30 to-slate-900', height: 'md:pb-3', badgeColor: 'text-amber-600' }
+        ];
+
+        const podiumEl = document.getElementById('ranking-podium');
+        podiumEl.innerHTML = top3.map(slot => {
+          if (!slot.user) return '<div></div>';
+          const isMe = slot.user.id === currentUser.id;
+          return `
+            <div class="ihm-panel rounded-2xl p-5 ${slot.height} border-2 ${slot.border} bg-gradient-to-b ${slot.bg} flex flex-col items-center text-center space-y-2.5 relative">
+              <span class="px-3 py-0.5 rounded-full bg-slate-950 border ${slot.border} font-mono font-extrabold text-xs ${slot.badgeColor}">
+                ${slot.pos}º LUGAR • ${slot.medal}
+              </span>
+
+              <div class="w-20 h-20 rounded-2xl overflow-hidden border-2 ${slot.border} shadow-lg">
+                ${AVATARS[slot.user.avatarId]?.svg || AVATARS[0].svg}
+              </div>
+
+              <div>
+                <div class="font-display font-bold text-base sm:text-lg text-white flex items-center justify-center gap-1.5">
+                  <span>${slot.user.name}</span>
+                  ${isMe ? '<span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-cyan-500 text-slate-950 font-extrabold">VOCÊ</span>' : ''}
+                </div>
+                <div class="text-xs font-mono text-slate-400">${slot.user.turma}</div>
+                <div class="text-[11px] font-mono text-cyan-400 mt-0.5">${Store.getPatente(slot.user.xp)}</div>
+              </div>
+
+              <div class="pt-1 font-mono font-extrabold text-xl text-amber-400">
+                ${slot.user.xp} XP
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        // Tabela Completa
+        const tbody = document.getElementById('ranking-table-body');
+        tbody.innerHTML = ranked.map((u, idx) => {
+          const isMe = u.id === currentUser.id;
+          const acc = u.attempts > 0 ? Math.round((u.correctCount / u.attempts) * 100) : 0;
+          return `
+            <tr class="${isMe ? 'bg-cyan-500/15 border-l-4 border-l-cyan-400' : 'hover:bg-slate-900/60'} transition-colors">
+              <td class="py-3.5 px-4 font-mono font-extrabold ${idx === 0 ? 'text-amber-400' : (idx === 1 ? 'text-slate-300' : (idx === 2 ? 'text-amber-600' : 'text-slate-400'))}">
+                #${idx + 1}
+              </td>
+              <td class="py-3.5 px-4">
+                <div class="flex items-center gap-3">
+                  <div class="w-9 h-9 rounded-lg overflow-hidden border border-slate-700 shrink-0">
+                    ${AVATARS[u.avatarId]?.svg || AVATARS[0].svg}
+                  </div>
+                  <div>
+                    <div class="font-bold text-white flex items-center gap-2">
+                      <span>${u.name}</span>
+                      ${isMe ? '<span class="text-[10px] font-mono px-2 py-0.5 rounded bg-cyan-400 text-slate-950 font-extrabold">VOCÊ</span>' : ''}
+                    </div>
+                    <div class="text-[11px] font-mono text-cyan-400">${Store.getPatente(u.xp)}</div>
+                  </div>
+                </div>
+              </td>
+              <td class="py-3.5 px-4 hidden sm:table-cell font-mono text-xs text-slate-300">${u.turma}</td>
+              <td class="py-3.5 px-4 text-center font-mono text-xs text-slate-300">${u.completedIds.length}/18</td>
+              <td class="py-3.5 px-4 text-center font-mono text-xs text-emerald-400 font-bold">${acc}%</td>
+              <td class="py-3.5 px-4 text-right font-mono font-extrabold text-amber-400">${u.xp} XP</td>
+            </tr>
+          `;
+        }).join('');
+
+        // Restaura botão de reset do professor
+        document.getElementById('ranking-reset-area').innerHTML = `
+          <button onclick="App.requestRankingReset()" class="px-4 py-2.5 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 font-mono font-bold text-xs transition-all">
+            Resetar Ranking Local (Professor)
+          </button>
+        `;
+      },
+
+      requestRankingReset() {
+        AudioFX.click();
+        document.getElementById('ranking-reset-area').innerHTML = `
+          <div class="flex flex-wrap items-center gap-2 bg-slate-950 border border-red-500/40 rounded-xl p-2">
+            <span class="text-xs font-mono text-red-400 px-1">Zerar ranking da turma?</span>
+            <button onclick="App.confirmRankingReset()" class="px-3 py-1.5 rounded-lg bg-red-600 hover:bg-red-500 text-white font-mono font-bold text-xs">
+              SIM, ZERAR
+            </button>
+            <button onclick="App.renderRankingView()" class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 font-mono text-xs">
+              CANCELAR
+            </button>
+          </div>
+        `;
+      },
+
+      confirmRankingReset() {
+        AudioFX.error();
+        localStorage.removeItem(Store.STORAGE_KEY);
+        Store.load();
+        this.syncHeader();
+        this.renderRankingView();
+      },
+
+      // ===================================================================
+      // MOTOR DE DESAFIOS, CRONÔMETRO E FEEDBACK EXPLICATIVO
+      // ===================================================================
+      startModule(modIdx) {
+        const user = Store.getCurrentUser();
+        const mod = MODULES[modIdx];
+        const firstPending = mod.challenges.findIndex(c => !user.completedIds.includes(c.id));
+        this.startChallenge(modIdx, firstPending >= 0 ? firstPending : 0);
+      },
+
+      startChallenge(modIdx, chIdx) {
+        AudioFX.click();
+        this.stopTimer();
+        this.modIdx = modIdx;
+        this.chIdx = chIdx;
+        this.answered = false;
+        this.svgState = {};
+
+        const mod = MODULES[modIdx];
+        const ch = mod.challenges[chIdx];
+        this.timeTotal = ch.timeLimit;
+        this.timeLeft = ch.timeLimit;
+
+        // Alterna para tela do desafio
+        ['view-modules', 'view-register', 'view-ranking'].forEach(id => {
+          document.getElementById(id).classList.add('hidden');
+        });
+        document.getElementById('view-challenge').classList.remove('hidden');
+        document.getElementById('ch-feedback-panel').classList.add('hidden');
+
+        // Preenche cabeçalho e blocos pedagógicos
+        document.getElementById('ch-module-badge').textContent = `MÓDULO 0${mod.number}: ${mod.title}`;
+        const lvlBadge = document.getElementById('ch-level-badge');
+        lvlBadge.textContent = `NÍVEL: ${ch.level.toUpperCase()}`;
+        lvlBadge.className = `text-[11px] font-mono font-bold uppercase px-2 py-0.5 rounded border ${
+          ch.level === 'Fácil'
+            ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
+            : ch.level === 'Médio'
+            ? 'bg-amber-500/15 text-amber-300 border-amber-500/30'
+            : 'bg-red-500/15 text-red-300 border-red-500/30'
+        }`;
+
+        document.getElementById('ch-step-text').textContent = `Desafio ${chIdx + 1} de 3`;
+        document.getElementById('ch-title').textContent = ch.title;
+        document.getElementById('ch-context').textContent = ch.context;
+        document.getElementById('ch-objective').textContent = ch.objective;
+        document.getElementById('ch-svg-hint').textContent = ch.svgHint;
+
+        this.renderChallengeSvg();
+        this.renderChallengeOptions();
+        this.startTimer();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      },
+
+      renderChallengeSvg() {
+        const ch = MODULES[this.modIdx].challenges[this.chIdx];
+        document.getElementById('ch-svg-stage').innerHTML = ch.renderSvg(this.svgState);
+      },
+
+      toggleSvgVar(key) {
+        AudioFX.click();
+        this.svgState[key] = this.svgState[key] ? 0 : 1;
+        this.renderChallengeSvg();
+      },
+
+      setSvgState(key, val) {
+        AudioFX.click();
+        this.svgState[key] = val;
+        this.renderChallengeSvg();
+      },
+
+      renderChallengeOptions() {
+        const ch = MODULES[this.modIdx].challenges[this.chIdx];
+        const letters = ['A', 'B', 'C', 'D'];
+        const list = document.getElementById('ch-options-list');
+
+        list.innerHTML = ch.options.map((opt, idx) => `
+          <button id="opt-btn-${idx}" onclick="App.submitAnswer(${idx})" class="w-full p-3.5 sm:p-4 rounded-xl bg-slate-900/95 hover:bg-slate-800 border border-slate-700 hover:border-cyan-400 text-left flex items-start gap-3 transition-all group">
+            <span class="w-7 h-7 rounded-lg bg-slate-800 group-hover:bg-cyan-500 text-cyan-400 group-hover:text-slate-950 font-mono font-extrabold text-xs flex items-center justify-center shrink-0 mt-0.5 transition-colors">
+              ${letters[idx]}
+            </span>
+            <span class="text-xs sm:text-sm text-slate-200 leading-snug">${opt}</span>
+          </button>
+        `).join('');
+      },
+
+      startTimer() {
+        this.stopTimer();
+        let prevSec = Math.ceil(this.timeLeft);
+        this.updateTimerDisplay();
+
+        this.timerHandle = setInterval(() => {
+          this.timeLeft = Math.max(0, this.timeLeft - 0.1);
+          const curSec = Math.ceil(this.timeLeft);
+
+          if (curSec !== prevSec) {
+            prevSec = curSec;
+            if (curSec <= 5 && curSec > 0) {
+              AudioFX.tickUrgent();
+            }
+          }
+
+          this.updateTimerDisplay();
+
+          if (this.timeLeft <= 0) {
+            this.stopTimer();
+            this.submitAnswer(-1, true);
+          }
+        }, 100);
+      },
+
+      stopTimer() {
+        if (this.timerHandle) {
+          clearInterval(this.timerHandle);
+          this.timerHandle = null;
+        }
+      },
+
+      updateTimerDisplay() {
+        const secs = Math.ceil(this.timeLeft);
+        const pct = (this.timeLeft / this.timeTotal) * 100;
+        const txt = document.getElementById('ch-timer-text');
+        const bar = document.getElementById('ch-timer-bar');
+        const box = document.getElementById('ch-timer-box');
+
+        txt.textContent = `00:${secs < 10 ? '0' + secs : secs}`;
+        bar.style.width = `${pct}%`;
+
+        if (secs <= 5) {
+          txt.className = 'text-xl sm:text-2xl font-mono font-extrabold text-red-400 tabular-nums animate-pulse';
+          bar.className = 'h-full rounded-full bg-red-500 animate-pulse transition-all duration-100';
+          box.className = 'flex items-center gap-3 bg-red-950/60 border border-red-500 rounded-xl px-4 py-2 transition-colors';
+        } else {
+          txt.className = 'text-xl sm:text-2xl font-mono font-extrabold text-cyan-400 tabular-nums';
+          bar.className = 'h-full rounded-full bg-gradient-to-r from-cyan-400 to-emerald-400 transition-all duration-100';
+          box.className = 'flex items-center gap-3 bg-slate-950 border border-slate-700 rounded-xl px-4 py-2 transition-colors';
+        }
+      },
+
+      submitAnswer(selectedIdx, isTimeout = false) {
+        if (this.answered) return;
+        this.answered = true;
+        this.stopTimer();
+
+        const mod = MODULES[this.modIdx];
+        const ch = mod.challenges[this.chIdx];
+        const user = Store.getCurrentUser();
+        const isCorrect = !isTimeout && selectedIdx === ch.correctIndex;
+
+        user.attempts += 1;
+
+        // Destaca visualmente as alternativas
+        ch.options.forEach((_, idx) => {
+          const btn = document.getElementById(`opt-btn-${idx}`);
+          btn.disabled = true;
+          if (idx === ch.correctIndex) {
+            btn.className = 'w-full p-3.5 sm:p-4 rounded-xl bg-emerald-500/20 border-2 border-emerald-400 text-left flex items-start gap-3';
+          } else if (idx === selectedIdx && !isCorrect) {
+            btn.className = 'w-full p-3.5 sm:p-4 rounded-xl bg-red-500/20 border-2 border-red-500 text-left flex items-start gap-3';
+          } else {
+            btn.className = 'w-full p-3.5 sm:p-4 rounded-xl bg-slate-950/60 border border-slate-800 opacity-55 text-left flex items-start gap-3';
+          }
+        });
+
+        const fbPanel = document.getElementById('ch-feedback-panel');
+        const fbIcon = document.getElementById('fb-badge-icon');
+        const fbLabel = document.getElementById('fb-status-label');
+        const fbHeadline = document.getElementById('fb-headline');
+        const fbXpTag = document.getElementById('fb-xp-tag');
+        const retryBtn = document.getElementById('fb-retry-btn');
+        const nextBtn = document.getElementById('fb-next-btn');
+
+        if (isCorrect) {
+          AudioFX.success();
+          user.correctCount += 1;
+          const speedBonus = Math.round((this.timeLeft / this.timeTotal) * 50);
+          const earnedXp = 100 + speedBonus;
+
+          const alreadyCompleted = user.completedIds.includes(ch.id);
+          if (!alreadyCompleted) {
+            user.completedIds.push(ch.id);
+            user.xp += earnedXp;
+          } else {
+            // Bônus simbólico por revisão rápida
+            user.xp += 15;
+          }
+
+          Store.save();
+          this.syncHeader();
+
+          fbPanel.className = 'ihm-panel rounded-2xl p-5 sm:p-6 border-2 border-emerald-500/70 bg-emerald-950/20 transition-all space-y-4';
+          fbIcon.className = 'w-11 h-11 rounded-xl bg-emerald-500/20 border border-emerald-500 text-emerald-400 flex items-center justify-center font-bold text-xl shrink-0';
+          fbIcon.textContent = '✓';
+          fbLabel.className = 'text-xs font-mono font-extrabold uppercase tracking-wider text-emerald-400';
+          fbLabel.textContent = 'DIAGNÓSTICO VALIDADO';
+          fbHeadline.textContent = 'Excelente! Operação concluída com sucesso.';
+          fbXpTag.className = 'px-4 py-2 rounded-xl font-mono font-extrabold text-xs sm:text-sm bg-emerald-500/20 text-emerald-300 border border-emerald-500/40';
+          fbXpTag.textContent = alreadyCompleted ? '+15 XP (Revisão Técnica)' : `+${earnedXp} XP (Bônus Velocidade: +${speedBonus})`;
+          retryBtn.classList.add('hidden');
+        } else {
+          AudioFX.error();
+          Store.save();
+
+          fbPanel.className = 'ihm-panel rounded-2xl p-5 sm:p-6 border-2 border-red-500/70 bg-red-950/20 transition-all space-y-4';
+          fbIcon.className = 'w-11 h-11 rounded-xl bg-red-500/20 border border-red-500 text-red-400 flex items-center justify-center font-bold text-xl shrink-0';
+          fbIcon.textContent = '!';
+          fbLabel.className = 'text-xs font-mono font-extrabold uppercase tracking-wider text-red-400';
+          fbLabel.textContent = isTimeout ? 'ALARME: TEMPO ESGOTADO' : 'FALHA NA OPERAÇÃO';
+          fbHeadline.textContent = isTimeout ? 'O cronômetro zerou antes da resposta.' : 'Alternativa incorreta. Analise a explicação abaixo:';
+          fbXpTag.className = 'px-4 py-2 rounded-xl font-mono font-extrabold text-xs sm:text-sm bg-red-500/20 text-red-300 border border-red-500/40';
+          fbXpTag.textContent = '0 XP';
+          retryBtn.classList.remove('hidden');
+        }
+
+        document.getElementById('fb-explanation').textContent = ch.explanation;
+
+        const isLastInModule = this.chIdx === mod.challenges.length - 1;
+        nextBtn.textContent = isLastInModule ? 'Concluir Módulo e Ver Ranking 🏆' : 'Próximo Desafio →';
+
+        fbPanel.classList.remove('hidden');
+        fbPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      },
+
+      retryCurrentChallenge() {
+        this.startChallenge(this.modIdx, this.chIdx);
+      },
+
+      advanceChallenge() {
+        const mod = MODULES[this.modIdx];
+        if (this.chIdx < mod.challenges.length - 1) {
+          this.startChallenge(this.modIdx, this.chIdx + 1);
+        } else {
+          this.switchTab('ranking');
+        }
+      },
+
+      exitChallenge() {
+        this.stopTimer();
+        this.switchTab('modules');
+      }
+    };
+
+    window.onload = function () {
+      App.init();
+    };
+  </script>
+</body>
+</html>
